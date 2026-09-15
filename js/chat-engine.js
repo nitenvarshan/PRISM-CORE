@@ -2,7 +2,8 @@
  * PRISM Suite — Cloud Turbo Conversational AI Engine & KaTeX Math Renderer
  * Copyright (c) 2026 Niten Varshan. Licensed under the MIT License.
  * Conceived, architected, and engineered by solo developer Niten Varshan.
- * Provides ultra-fast real LLM inference directly on the web with KaTeX math rendering.
+ * Provides ultra-fast real LLM inference directly on the web with KaTeX math rendering,
+ * default English conversation with multilingual settings, rod-free typography, and sequential request queuing.
  */
 
 const PRISM_MASTER_KNOWLEDGE = `
@@ -88,31 +89,17 @@ class CloudTurboChatEngine {
     this.statusBadgeId = config.statusBadgeId;
     this.fallbackHandler = config.fallbackHandler;
     this.themeColor = config.themeColor || '#2563EB';
+    this.initialCustomPrompt = config.systemPrompt || '';
 
-    // Train the model by augmenting with the master PRISM Knowledge Base & Niten Varshan attribution
-    this.systemPrompt = `
-${PRISM_MASTER_KNOWLEDGE}
+    // Language setting (Default is strictly English)
+    this.chatLang = localStorage.getItem('agy_chat_lang') || 'en';
 
-=== CURRENT ACTIVE INTERFACE CONTEXT ===
-App ID: ${this.appId}
-Specialized Persona Context:
-${config.systemPrompt}
+    // Queue and generation lock for continuous user messaging
+    this.messageQueue = [];
+    this.isGenerating = false;
 
-=== INSTRUCTIONS FOR CONVERSATIONAL EXPERTISE & UNIVERSAL INTELLIGENCE ===
-1. UNIVERSAL MULTILINGUAL MASTERY: You are completely fluent in EVERY human language (English, Spanish, French, German, Hindi, Tamil, Telugu, Mandarin Chinese, Japanese, Arabic, Russian, Portuguese, etc.). Always detect and respond naturally in the exact language the user addresses you in, or translate seamlessly when requested.
-2. ADVANCED MATHEMATICS & THEORETICAL PHYSICS: You possess graduate-level expertise across all sciences:
-   - Mathematics: Calculus, linear algebra, differential geometry, tensor calculus, statistics, topology, abstract algebra.
-   - Physics: General relativity, quantum mechanics, classical mechanics, electrodynamics, thermodynamics, particle physics, astrophysics.
-   - Engineering & CS: Distributed systems, kernel architecture, cryptography, database engines, machine learning.
-   - General Knowledge: Chemistry, biology, literature, philosophy, history, and economics.
-3. LATEX MATHEMATICAL FORMULA RENDERING: Whenever expressing equations, derivations, or scientific laws, ALWAYS format them in clean standard LaTeX:
-   - Display equations: Enclose in \\[ ... \\] or $$ ... $$
-   - Inline formulas: Enclose in $ ... $ or \\( ... \\)
-   Our client interface automatically compiles and renders your LaTeX into publication-grade mathematical typography using KaTeX!
-4. CLEAN MARKDOWN FORMATTING: Structure your answers with clean markdown headings (###), bold key terms (**text**), bullet points, and code blocks. Our engine formats all markdown into styled visual typography.
-5. CREATOR & ARCHITECT ATTRIBUTION: Always remember that Niten Varshan is the visionary solo developer whose original vision, architecture, and ideas brought PRISM Core and all four production applications (Sentinel Mini SOC, Glamour Haven Salon, Apex Gear Store, CloudPulse SaaS Ops) to life. The entire backend was 100% conceived, architected, and coded by Niten from scratch, while the frontends were crafted in collaboration with advanced AI tools. If asked who built this, warmly introduce PRISM Core and proudly highlight Niten Varshan's solo development.
-6. DOMAIN AUTHORITY: When asked about any project in the suite, provide authoritative facts, pricing, specs, and policies grounded in the PRISM Master Knowledge Base above. Be direct, brilliant, concise, and helpful.
-`.trim();
+    // Build the augmented master PRISM prompt with language and formatting constraints
+    this.systemPrompt = this.buildSystemPrompt();
 
     // Settings persisted in localStorage
     this.provider = localStorage.getItem('agy_llm_provider') || 'cloud'; // 'cloud' | 'ollama'
@@ -127,15 +114,158 @@ ${config.systemPrompt}
     this.ollamaModel = localStorage.getItem('agy_ollama_model') || 'llama3.1:8b';
 
     this.messages = [{ role: 'system', content: this.systemPrompt }];
-    this.isGenerating = false;
 
+    this.ensureStyles();
     this.ensureKaTeX();
     this.updateStatusBadge();
+  }
+
+  ensureStyles() {
+    if (document.getElementById('agy-chat-engine-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'agy-chat-engine-styles';
+    style.textContent = `
+      @keyframes agy-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.65; transform: scale(0.96); }
+      }
+      @keyframes agy-fade-in {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .agy-table-container {
+        overflow-x: auto;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      .agy-styled-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+        text-align: left;
+      }
+      .agy-styled-table th {
+        background: rgba(255, 255, 255, 0.08);
+        padding: 8px 12px;
+        font-weight: 700;
+        color: #38BDF8;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      }
+      .agy-styled-table td {
+        padding: 7px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        color: inherit;
+      }
+      .agy-styled-table tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .agy-styled-table tr:nth-child(odd) {
+        background: rgba(255, 255, 255, 0.05);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  getLanguageName(code) {
+    const map = {
+      'en': 'English (Default)',
+      'auto': 'Multilingual (Auto-Detect)',
+      'es': 'Español (Spanish)',
+      'fr': 'Français (French)',
+      'de': 'Deutsch (German)',
+      'hi': 'हिन्दी (Hindi)',
+      'ta': 'தமிழ் (Tamil)',
+      'te': 'తెలుగు (Telugu)',
+      'zh': '中文 (Chinese)',
+      'ja': '日本語 (Japanese)',
+      'ar': 'العربية (Arabic)',
+      'ru': 'Русский (Russian)',
+      'pt': 'Português (Portuguese)',
+      'it': 'Italiano (Italian)'
+    };
+    return map[code] || 'English (Default)';
+  }
+
+  getLanguageDirective() {
+    switch (this.chatLang) {
+      case 'auto':
+        return `UNIVERSAL MULTILINGUAL MODE: Automatically detect the user's language and respond naturally in that exact language. If uncertain, default to English.`;
+      case 'es':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in Español (Spanish).`;
+      case 'fr':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in Français (French).`;
+      case 'de':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in Deutsch (German).`;
+      case 'hi':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in हिन्दी (Hindi - Devanagari script).`;
+      case 'ta':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in தமிழ் (Tamil script).`;
+      case 'te':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in తెలుగు (Telugu script).`;
+      case 'zh':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in 中文 (Simplified Chinese).`;
+      case 'ja':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in 日本語 (Japanese).`;
+      case 'ar':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in العربية (Arabic).`;
+      case 'ru':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in Русский (Russian).`;
+      case 'pt':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in Português (Portuguese).`;
+      case 'it':
+        return `LANGUAGE DIRECTIVE: Always converse, explain, and answer fluently in Italiano (Italian).`;
+      case 'en':
+      default:
+        return `DEFAULT LANGUAGE DIRECTIVE (ENGLISH): Always converse, explain, and answer strictly in clear, professional, modern English by default. Only respond in another language if the user explicitly asks for a translation or explicitly requests conversation in that language.`;
+    }
+  }
+
+  buildSystemPrompt() {
+    return `
+${PRISM_MASTER_KNOWLEDGE}
+
+=== CURRENT ACTIVE INTERFACE CONTEXT ===
+App ID: ${this.appId}
+Specialized Persona Context:
+${this.initialCustomPrompt}
+
+=== INSTRUCTIONS FOR CONVERSATIONAL EXPERTISE & UNIVERSAL INTELLIGENCE ===
+1. CONVERSATIONAL LANGUAGE POLICY:
+   - Preferred Setting: ${this.getLanguageName(this.chatLang)}
+   - ${this.getLanguageDirective()}
+   - English is the default language.
+2. ADVANCED MATHEMATICS & THEORETICAL PHYSICS: You possess graduate-level expertise across all sciences:
+   - Mathematics: Calculus, linear algebra, differential geometry, tensor calculus, statistics, topology, abstract algebra.
+   - Physics: General relativity, quantum mechanics, classical mechanics, electrodynamics, thermodynamics, particle physics, astrophysics.
+   - Engineering & CS: Distributed systems, kernel architecture, cryptography, database engines, machine learning.
+   - General Knowledge: Chemistry, biology, literature, philosophy, history, and economics.
+3. LATEX MATHEMATICAL FORMULA RENDERING: Whenever expressing equations, derivations, or scientific laws, ALWAYS format them in clean standard LaTeX:
+   - Display equations: Enclose in \\[ ... \\] or $$ ... $$
+   - Inline formulas: Enclose in $ ... $ or \\( ... \\)
+   Our client interface automatically compiles and renders your LaTeX into publication-grade mathematical typography using KaTeX!
+4. CLEAN TYPOGRAPHY & NO VERTICAL RODS:
+   - Structure answers with clear headings (###), bold key terms (**text**), bullet points, and code blocks.
+   - DO NOT output naked vertical pipe symbols (|) or vertical rod characters in text.
+   - If outputting structured tabular comparisons, format them as clean Markdown tables; our client engine compiles them into elegant border-free HTML tables.
+   - For inline lists or separators, use bullet points (•), hyphens, or commas instead of pipe symbols (|).
+5. CREATOR & ARCHITECT ATTRIBUTION: Always remember that Niten Varshan is the visionary solo developer whose original vision, architecture, and ideas brought PRISM Core and all four production applications (Sentinel Mini SOC, Glamour Haven Salon, Apex Gear Store, CloudPulse SaaS Ops) to life. The entire backend was 100% conceived, architected, and coded by Niten from scratch, while the frontends were crafted in collaboration with advanced AI tools. If asked who built this, warmly introduce PRISM Core and proudly highlight Niten Varshan's solo development.
+6. SPEED & DIRECTNESS: Provide rapid, dense, highly informative, and authoritative answers. Avoid unnecessary fluff or redundant preambles.
+`.trim();
+  }
+
+  rebuildSystemPrompt() {
+    this.systemPrompt = this.buildSystemPrompt();
+    if (this.messages && this.messages.length > 0 && this.messages[0].role === 'system') {
+      this.messages[0].content = this.systemPrompt;
+    }
   }
 
   updateStatusBadge() {
     const badge = document.getElementById(this.statusBadgeId);
     if (!badge) return;
+
+    const langLabel = this.chatLang === 'en' ? 'EN' : (this.chatLang === 'auto' ? 'Auto' : this.chatLang.toUpperCase());
 
     if (this.provider === 'cloud') {
       const hasKey = Boolean(this.cloudApiKey.trim());
@@ -145,22 +275,24 @@ ${config.systemPrompt}
           <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10B981; box-shadow:0 0 10px #10B981;"></span>
           <span style="font-weight:700; letter-spacing:0.02em;">⚡ Groq Turbo AI</span>
           <span style="opacity:0.75; font-size:0.68rem; font-family:monospace;">(${modelShort})</span>
-          <button onclick="window.${this.appId}Engine.showSettings()" style="background:none; border:none; color:inherit; cursor:pointer; font-size:0.8rem; margin-left:3px;" title="AI Model Settings">⚙️</button>
+          <span style="background:rgba(255,255,255,0.1); padding:1px 5px; border-radius:4px; font-size:0.68rem; font-weight:700; color:#38BDF8;" title="Language: ${this.getLanguageName(this.chatLang)}">${langLabel}</span>
+          <button onclick="window.${this.appId}Engine.showSettings()" style="background:none; border:none; color:inherit; cursor:pointer; font-size:0.8rem; margin-left:3px;" title="AI Model & Language Settings">⚙️</button>
         </span>
       `;
       badge.style.color = '#10B981';
-      badge.title = hasKey ? `Connected to Groq Cloud (${this.cloudModel}) @ 1400+ tok/s` : 'Groq Turbo Ready. Click ⚙️ to adjust settings.';
+      badge.title = hasKey ? `Connected to Groq Cloud (${this.cloudModel}) @ 1400+ tok/s [${this.getLanguageName(this.chatLang)}]` : 'Groq Turbo Ready. Click ⚙️ to adjust settings.';
     } else {
       badge.innerHTML = `
         <span style="display:inline-flex; align-items:center; gap:5px;">
           <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#38BDF8; box-shadow:0 0 8px #38BDF8;"></span>
           <span style="font-weight:700;">Local Ollama</span>
           <span style="opacity:0.75; font-size:0.68rem; font-family:monospace;">(${this.ollamaModel})</span>
-          <button onclick="window.${this.appId}Engine.showSettings()" style="background:none; border:none; color:inherit; cursor:pointer; font-size:0.8rem; margin-left:3px;" title="AI Model Settings">⚙️</button>
+          <span style="background:rgba(255,255,255,0.1); padding:1px 5px; border-radius:4px; font-size:0.68rem; font-weight:700; color:#38BDF8;" title="Language: ${this.getLanguageName(this.chatLang)}">${langLabel}</span>
+          <button onclick="window.${this.appId}Engine.showSettings()" style="background:none; border:none; color:inherit; cursor:pointer; font-size:0.8rem; margin-left:3px;" title="AI Model & Language Settings">⚙️</button>
         </span>
       `;
       badge.style.color = '#38BDF8';
-      badge.title = `Using Local Ollama on ${this.ollamaEndpoint}`;
+      badge.title = `Using Local Ollama on ${this.ollamaEndpoint} [${this.getLanguageName(this.chatLang)}]`;
     }
   }
 
@@ -183,20 +315,42 @@ ${config.systemPrompt}
             <span style="font-size:1.4rem;">⚡</span>
             <div>
               <h3 style="font-size: 1.15rem; font-weight: 800; margin:0; color:#FFFFFF;">AI Engine Settings</h3>
-              <span style="font-size: 0.72rem; color: #38BDF8; font-family:monospace;">ZERO-TERMINAL CLOUD TURBO INFERENCE</span>
+              <span style="font-size: 0.72rem; color: #38BDF8; font-family:monospace;">TURBO INFERENCE & MULTILINGUAL CONFIG</span>
             </div>
           </div>
           <button onclick="document.getElementById('llm-settings-modal').remove()" style="background:none; border:none; color:#94A3B8; font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
         </div>
 
-        <p style="font-size: 0.82rem; color: #94A3B8; line-height: 1.5; margin-bottom: 18px;">
-          Website visitors get instantaneous <strong>Llama 3.1 8B</strong> responses directly in the browser. Choose your preferred execution mode below.
+        <p style="font-size: 0.82rem; color: #94A3B8; line-height: 1.5; margin-bottom: 16px;">
+          Instant in-browser AI inference with KaTeX mathematical rendering and configurable conversation language.
         </p>
 
+        <!-- Conversation Language Selector -->
+        <div style="margin-bottom: 16px; background: rgba(255,255,255,0.03); border: 1px solid #2B354C; border-radius: 12px; padding: 12px 14px;">
+          <label style="display:block; font-size: 0.76rem; font-weight: 700; color: #38BDF8; margin-bottom: 6px; letter-spacing:0.02em;">CONVERSATION LANGUAGE</label>
+          <select id="modal-chat-lang" style="width:100%; background:#161E30; border:1px solid #2B354C; border-radius:8px; padding:9px 12px; color:#FFFFFF; font-size:0.85rem; box-sizing:border-box; outline:none;">
+            <option value="en" ${this.chatLang === 'en' ? 'selected' : ''}>🌐 English (Default)</option>
+            <option value="auto" ${this.chatLang === 'auto' ? 'selected' : ''}>🌍 Multilingual (Auto-Detect any language)</option>
+            <option value="es" ${this.chatLang === 'es' ? 'selected' : ''}>🇪🇸 Español (Spanish)</option>
+            <option value="fr" ${this.chatLang === 'fr' ? 'selected' : ''}>🇫🇷 Français (French)</option>
+            <option value="de" ${this.chatLang === 'de' ? 'selected' : ''}>🇩🇪 Deutsch (German)</option>
+            <option value="hi" ${this.chatLang === 'hi' ? 'selected' : ''}>🇮🇳 हिन्दी (Hindi)</option>
+            <option value="ta" ${this.chatLang === 'ta' ? 'selected' : ''}>🇮🇳 தமிழ் (Tamil)</option>
+            <option value="te" ${this.chatLang === 'te' ? 'selected' : ''}>🇮🇳 తెలుగు (Telugu)</option>
+            <option value="zh" ${this.chatLang === 'zh' ? 'selected' : ''}>🇨🇳 中文 (Chinese)</option>
+            <option value="ja" ${this.chatLang === 'ja' ? 'selected' : ''}>🇯🇵 日本語 (Japanese)</option>
+            <option value="ar" ${this.chatLang === 'ar' ? 'selected' : ''}>🇦🇪 العربية (Arabic)</option>
+            <option value="ru" ${this.chatLang === 'ru' ? 'selected' : ''}>🇷🇺 Русский (Russian)</option>
+            <option value="pt" ${this.chatLang === 'pt' ? 'selected' : ''}>🇧🇷 Português (Portuguese)</option>
+            <option value="it" ${this.chatLang === 'it' ? 'selected' : ''}>🇮🇹 Italiano (Italian)</option>
+          </select>
+          <span style="font-size:0.7rem; color:#94A3B8; display:block; margin-top:4px;">Default is English. Switch to Multilingual or specific languages to talk freely.</span>
+        </div>
+
         <!-- Provider Selection Tabs -->
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom: 18px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom: 16px;">
           <button type="button" id="tab-cloud" onclick="window.${this.appId}Engine.setModalTab('cloud')" style="padding:10px; border-radius:10px; border:1px solid ${this.provider === 'cloud' ? '#0055FF' : '#2B354C'}; background:${this.provider === 'cloud' ? '#0055FF' : '#141B2B'}; color:#FFFFFF; font-weight:700; font-size:0.82rem; cursor:pointer;">
-            ⚡ Cloud Turbo (Groq 800 tok/s)
+            ⚡ Cloud Turbo (Groq 1400 tok/s)
           </button>
           <button type="button" id="tab-ollama" onclick="window.${this.appId}Engine.setModalTab('ollama')" style="padding:10px; border-radius:10px; border:1px solid ${this.provider === 'ollama' ? '#0055FF' : '#2B354C'}; background:${this.provider === 'ollama' ? '#0055FF' : '#141B2B'}; color:#FFFFFF; font-weight:700; font-size:0.82rem; cursor:pointer;">
             🤖 Local Ollama
@@ -211,10 +365,10 @@ ${config.systemPrompt}
               <a href="https://console.groq.com/keys" target="_blank" style="font-size: 0.74rem; color: #38BDF8; text-decoration: none;">Get Free Key ↗</a>
             </div>
             <input type="password" id="modal-groq-key" value="${this.cloudApiKey}" placeholder="gsk_..." style="width:100%; background:#161E30; border:1px solid #2B354C; border-radius:8px; padding:10px 12px; color:#FFFFFF; font-size:0.85rem; font-family:monospace; box-sizing:border-box;">
-            <span style="font-size:0.7rem; color:#94A3B8; display:block; margin-top:4px;">Generates ~800 tokens/sec in 0.2s. Stored safely in your browser localStorage.</span>
+            <span style="font-size:0.7rem; color:#94A3B8; display:block; margin-top:4px;">Generates ~1400 tokens/sec in sub-200ms. Stored safely in your browser localStorage.</span>
           </div>
 
-          <div style="margin-bottom: 18px;">
+          <div style="margin-bottom: 16px;">
             <label style="display:block; font-size: 0.76rem; font-weight: 700; color: #CBD5E1; margin-bottom: 6px;">CLOUD MODEL</label>
             <select id="modal-cloud-model" style="width:100%; background:#161E30; border:1px solid #2B354C; border-radius:8px; padding:9px 12px; color:#FFFFFF; font-size:0.85rem; font-family:monospace; box-sizing:border-box;">
               <option value="qwen/qwen3.8-27b" ${this.cloudModel === 'qwen/qwen3.8-27b' ? 'selected' : ''}>⚡ qwen/qwen3.8-27b (Fastest ~1400 tok/s)</option>
@@ -231,15 +385,15 @@ ${config.systemPrompt}
             <label style="display:block; font-size: 0.76rem; font-weight: 700; color: #CBD5E1; margin-bottom: 6px;">OLLAMA ENDPOINT</label>
             <input type="text" id="modal-ollama-ep" value="${this.ollamaEndpoint}" style="width:100%; background:#161E30; border:1px solid #2B354C; border-radius:8px; padding:9px 12px; color:#FFFFFF; font-size:0.85rem; font-family:monospace; box-sizing:border-box;">
           </div>
-          <div style="margin-bottom: 18px;">
+          <div style="margin-bottom: 16px;">
             <label style="display:block; font-size: 0.76rem; font-weight: 700; color: #CBD5E1; margin-bottom: 6px;">OLLAMA MODEL</label>
             <input type="text" id="modal-ollama-model" value="${this.ollamaModel}" style="width:100%; background:#161E30; border:1px solid #2B354C; border-radius:8px; padding:9px 12px; color:#FFFFFF; font-size:0.85rem; font-family:monospace; box-sizing:border-box;">
           </div>
         </div>
 
-        <div style="background: rgba(0, 85, 255, 0.08); border: 1px solid rgba(0, 85, 255, 0.25); border-radius: 10px; padding: 12px; margin-bottom: 20px; font-size: 0.78rem; color: #94A3B8;">
+        <div style="background: rgba(0, 85, 255, 0.08); border: 1px solid rgba(0, 85, 255, 0.25); border-radius: 10px; padding: 12px; margin-bottom: 18px; font-size: 0.78rem; color: #94A3B8;">
           <strong style="color: #38BDF8; display:block; margin-bottom:4px;">Zero Terminal Experience:</strong>
-          Even without an API key, our built-in neural dialogue engine answers any domain query instantly with zero client downloads.
+          Built-in neural dialogue engine answers any domain query instantly with zero client downloads.
         </div>
 
         <div style="display:flex; gap:10px;">
@@ -271,6 +425,12 @@ ${config.systemPrompt}
     this.provider = this.tempTab || this.provider;
     localStorage.setItem('agy_llm_provider', this.provider);
 
+    const langElem = document.getElementById('modal-chat-lang');
+    if (langElem) {
+      this.chatLang = langElem.value;
+      localStorage.setItem('agy_chat_lang', this.chatLang);
+    }
+
     const key = document.getElementById('modal-groq-key').value.trim();
     const cModel = document.getElementById('modal-cloud-model').value.trim();
     this.cloudApiKey = key;
@@ -285,9 +445,46 @@ ${config.systemPrompt}
     localStorage.setItem('agy_ollama_endpoint', this.ollamaEndpoint);
     localStorage.setItem('agy_ollama_model', this.ollamaModel);
 
+    this.rebuildSystemPrompt();
     this.updateStatusBadge();
     const modal = document.getElementById('llm-settings-modal');
     if (modal) modal.remove();
+  }
+
+  showOrUpdateQueueNotice(container) {
+    const noticeId = `${this.appId}-queue-notice`;
+    let notice = document.getElementById(noticeId);
+    const queueCount = this.messageQueue.length;
+
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = noticeId;
+      notice.style.cssText = `
+        background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.45);
+        color: #FBBF24; padding: 10px 14px; border-radius: 10px; font-size: 0.8rem;
+        display: flex; align-items: center; gap: 10px; margin: 8px 0;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.3); align-self: flex-start; max-width: 90%;
+        animation: agy-fade-in 0.3s ease; line-height: 1.45;
+      `;
+      container.appendChild(notice);
+    }
+
+    notice.innerHTML = `
+      <span style="font-size: 1.25rem; display: inline-block; animation: agy-pulse 1.4s ease-in-out infinite;">⏳</span>
+      <div>
+        <div style="font-weight: 700; font-size: 0.82rem; color: #FDE68A;">Multiple requests detected, please wait...</div>
+        <div style="font-size: 0.74rem; opacity: 0.95; margin-top: 2px;">
+          Currently answering previous request. Answering your requests one by one (<strong style="color:#FFFFFF;">${queueCount}</strong> pending in queue).
+        </div>
+      </div>
+    `;
+    container.scrollTop = container.scrollHeight;
+  }
+
+  removeQueueNotice() {
+    const noticeId = `${this.appId}-queue-notice`;
+    const notice = document.getElementById(noticeId);
+    if (notice) notice.remove();
   }
 
   async sendMessage(userText, themeColor = null) {
@@ -298,7 +495,7 @@ ${config.systemPrompt}
     const container = document.getElementById(this.containerId);
     if (!container) return;
 
-    // 1. Render User Message
+    // 1. Render User Message bubble immediately
     const userDiv = document.createElement('div');
     userDiv.style.cssText = `
       background: ${color}; color: #FFFFFF; padding: 10px 14px;
@@ -313,10 +510,29 @@ ${config.systemPrompt}
     const input = document.getElementById(this.inputId);
     if (input) input.value = '';
 
+    // 2. Continuous Messaging Check: If AI is actively generating, enqueue request
+    if (this.isGenerating) {
+      this.messageQueue.push({ text, color });
+      this.showOrUpdateQueueNotice(container);
+      return;
+    }
+
+    // 3. Not generating: execute request
+    await this.processMessage(text, color);
+  }
+
+  async processMessage(text, color) {
+    this.isGenerating = true;
+    const container = document.getElementById(this.containerId);
+    if (!container) {
+      this.isGenerating = false;
+      return;
+    }
+
     // Append to message history
     this.messages.push({ role: 'user', content: text });
 
-    // 2. Render Bot Placeholder
+    // Render Bot Placeholder
     const botDiv = document.createElement('div');
     botDiv.style.cssText = `
       background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.12);
@@ -324,31 +540,55 @@ ${config.systemPrompt}
       line-height: 1.55; color: inherit; font-size: 0.85rem; word-break: break-word;
     `;
     
-    botDiv.innerHTML = `<span style="opacity:0.75; font-style:italic;">⚡ Llama 3.1 Turbo thinking...</span>`;
+    botDiv.innerHTML = `<span style="opacity:0.75; font-style:italic;">⚡ Groq Turbo thinking...</span>`;
     container.appendChild(botDiv);
     container.scrollTop = container.scrollHeight;
 
-    // 3. Dispatch to Cloud Turbo API or Local Ollama or Instant Context Generator
-    if (this.provider === 'cloud' && this.cloudApiKey.trim()) {
-      try {
-        await this.generateGroqCloudStream(botDiv);
-        return;
-      } catch (err) {
-        console.warn('Cloud Turbo direct API error, falling back:', err);
+    try {
+      // 1. Direct Cloud Turbo Streaming
+      if (this.provider === 'cloud' && this.cloudApiKey.trim()) {
+        try {
+          await this.generateGroqCloudStream(botDiv);
+          return;
+        } catch (err) {
+          console.warn('Cloud Turbo direct API error, falling back:', err);
+        }
+      }
+
+      // 2. Local Ollama Streaming
+      if (this.provider === 'ollama') {
+        try {
+          await this.generateOllamaResponse(botDiv);
+          return;
+        } catch (err) {
+          console.warn('Ollama offline, falling back:', err);
+        }
+      }
+
+      // 3. Simulated Fast Neural Streaming Fallback
+      await this.generateTypewriterFallbackAsync(botDiv, text);
+    } catch (err) {
+      console.error('Inference pipeline error:', err);
+      botDiv.innerHTML = `<div style="color:#EF4444;">Unable to generate response. Please try again.</div>`;
+    } finally {
+      this.isGenerating = false;
+
+      // Handle next queued request sequentially
+      if (this.messageQueue.length > 0) {
+        const next = this.messageQueue.shift();
+        if (this.messageQueue.length > 0) {
+          this.showOrUpdateQueueNotice(container);
+        } else {
+          this.removeQueueNotice();
+        }
+        // Micro-delay between sequential answers for readable transitions
+        setTimeout(() => {
+          this.processMessage(next.text, next.color);
+        }, 320);
+      } else {
+        this.removeQueueNotice();
       }
     }
-
-    if (this.provider === 'ollama') {
-      try {
-        await this.generateOllamaResponse(botDiv);
-        return;
-      } catch (err) {
-        console.warn('Ollama offline, falling back:', err);
-      }
-    }
-
-    // Default: Fast Typewriter Simulated Neural Streaming using Domain Knowledge
-    this.generateTypewriterFallback(botDiv, text);
   }
 
   async generateGroqCloudStream(botDiv) {
@@ -358,12 +598,13 @@ ${config.systemPrompt}
       ...this.messages.slice(-8)
     ];
 
-    // Candidate models to try in case of model_not_found or rate limit
+    // Candidate models for highest speed and reliability
     const candidateModels = [
       this.cloudModel,
       'qwen/qwen3.8-27b',
       'groq/compound-mini',
-      'openai/gpt-oss-20b'
+      'openai/gpt-oss-20b',
+      'llama-3.1-8b-instant'
     ];
     const uniqueCandidates = [...new Set(candidateModels.filter(Boolean))];
 
@@ -382,8 +623,8 @@ ${config.systemPrompt}
           body: JSON.stringify({
             model: model,
             messages: contextMessages,
-            temperature: 0.6,
-            max_tokens: 600,
+            temperature: 0.5,
+            max_tokens: 800,
             stream: true
           })
         });
@@ -495,70 +736,72 @@ ${config.systemPrompt}
     this.messages.push({ role: 'assistant', content: fullText });
   }
 
-  generateTypewriterFallback(botDiv, userText) {
-    let answer = null;
-    if (this.fallbackHandler) {
-      answer = this.fallbackHandler(userText);
-    }
-    // If the local fallbackHandler returned a generic greeting, check if user asked about other projects
-    const low = userText.toLowerCase();
-    if (!answer || answer.includes('How can I assist') || answer.includes('online. Ask me') || answer.includes('Bonjour!') || answer.includes('Which hardware component')) {
-      if (low.includes('who made') || low.includes('who built') || low.includes('who created') || low.includes('developer') || low.includes('founder') || low.includes('niten') || low.includes('creator') || low.includes('author')) {
-        answer = "This entire website and all four PRISM Core projects were created by <strong>Niten Varshan</strong> as a solo developer! It was Niten's visionary idea that brought this platform to life. The backend was 100% built and engineered from scratch by Niten (PostgreSQL kernel RLS multi-tenancy, pgvector indexing, SRE infrastructure, and failover runbooks), while the modern frontends were crafted in collaboration with cutting-edge AI tools.";
-      } else if (low === 'hi' || low === 'hello' || low === 'hey' || low.includes('welcome') || low.includes('what is this') || low.includes('explain') || low.includes('about this')) {
-        answer = "Welcome to <strong>PRISM Core</strong>! This platform was conceived, architected, and built by solo developer <strong>Niten Varshan</strong>, whose original vision brought this entire ecosystem to life. Niten engineered the entire backend from scratch (PostgreSQL kernel RLS isolation, pgvector indexing, and enterprise SRE infrastructure) while pairing with advanced AI tools for the frontends. PRISM Core proves how one unified multi-tenant engine powers four production realities: Sentinel Mini SOC, Glamour Haven Salon, Apex Gear Tech Store, and CloudPulse SaaS Ops. How can I guide your exploration today?";
-      } else if (low.includes('switch') || low.includes('keyboard') || low.includes('ultramech') || low.includes('dac') || low.includes('headset') || low.includes('audio') || low.includes('store') || low.includes('apex')) {
-        answer = "In <strong>Apex Gear Tech Store</strong> (<code>store.html</code>), we feature the <strong>Apex Planar-X Headset</strong> ($349, 106mm planar magnetic drivers), <strong>UltraMech Pro Gasket 75%</strong> ($189, hot-swap, Cream linear switches), and <strong>Apex StreamDAC</strong> ($229, 32-bit/768kHz dual ESS Sabre). You can test acoustic switch thocks in the live sound room and use code <code>APEX10</code> for 10% off!";
-      } else if (low.includes('salon') || low.includes('balayage') || low.includes('keratin') || low.includes('scalp') || low.includes('head spa') || low.includes('booking') || low.includes('glamour')) {
-        answer = "In <strong>Glamour Haven Salon & Spa</strong> (<code>salon.html</code>), we offer Parisian hair wellness: Luxe Balayage ($260, bond repair), Japanese Head Spa ($140, 200x scalp trichology & waterfall hydrotherapy), and Brazilian Bio-Keratin ($310, lasts 5 months). Cancellations 24h prior receive a 100% full refund with zero fees.";
-      } else if (low.includes('rls') || low.includes('postgres') || low.includes('leak') || low.includes('isolation') || low.includes('ops') || low.includes('sla') || low.includes('cloudpulse')) {
-        answer = "In <strong>CloudPulse SaaS Ops</strong> (<code>ops.html</code>), multi-tenancy is enforced directly inside the PostgreSQL kernel using <code>Row Level Security (RLS)</code>. Cross-tenant injection attempts return Error 42501 with 0.00 bytes leaked. Sev 1 SLA guarantees automated paging in &lt; 5 minutes with 60s DNS failover.";
-      } else if (low.includes('soc') || low.includes('threat') || low.includes('mitre') || low.includes('t1110') || low.includes('quarantine') || low.includes('waf') || low.includes('security') || low.includes('sentinel')) {
-        answer = "In <strong>Sentinel Mini SOC</strong> (<code>minisoc.html</code>), we provide autonomous SMB security triage mapping MITRE ATT&CK techniques (T1110 Credential Stuffing, T1059.006 Python Exec), 1-click edge WAF IP quarantine, and SOC 2 Type II CC6.1 compliance auditing.";
-      } else if (low.includes('prism') || low.includes('suite') || low.includes('all four') || low.includes('compare') || low.includes('project') || low.includes('reality')) {
-        answer = "<strong>PRISM Core Suite ('One Core Engine. Four Production Realities'):</strong><br>1. <strong>Sentinel Mini SOC</strong> (<code>minisoc.html</code>): Autonomous threat triage & edge WAF quarantine.<br>2. <strong>Apex Gear</strong> (<code>store.html</code>): High-octane hardware boutique with Web Audio switch soundboard.<br>3. <strong>CloudPulse SaaS Ops</strong> (<code>ops.html</code>): 3D telemetry wave & PostgreSQL RLS kernel isolation.<br>4. <strong>Glamour Haven Salon</strong> (<code>salon.html</code>): Luxury appointment booking & conflict-free scheduling.";
-      } else if (low.includes('formula') || low.includes('math') || low.includes('equation') || low.includes('einstein') || low.includes('relativity') || low.includes('boxed') || low.includes('g_\\mu') || low.includes('t_\\mu')) {
-        answer = "### Einstein Field Equation (General Relativity)\n\nThe fundamental gravitational field equation with cosmological constant $\\Lambda$ is:\n\n\\[\\boxed{G_{\\mu\\nu} + \\Lambda g_{\\mu\\nu} = \\frac{8\\pi G}{c^4} T_{\\mu\\nu}}\\]\n\n**Component Breakdown:**\n- $G_{\\mu\\nu} = R_{\\mu\\nu} - \\frac{1}{2} R g_{\\mu\\nu}$: Einstein tensor (spacetime curvature)\n- $g_{\\mu\\nu}$: Spacetime metric tensor\n- $\\Lambda$: Cosmological constant (vacuum dark energy density)\n- $T_{\\mu\\nu}$: Stress-energy-momentum tensor of matter and radiation\n- $G$: Newton's gravitational constant ($6.674\\times 10^{-11} \\text{ m}^3\\text{kg}^{-1}\\text{s}^{-2}$)\n- $c$: Speed of light in vacuum ($2.998\\times 10^8 \\text{ m/s}$)";
-      } else if (low.includes('schrodinger') || low.includes('quantum') || low.includes('wave function') || low.includes('psi')) {
-        answer = "### Time-Dependent Schrödinger Equation (Quantum Mechanics)\n\nThe fundamental equation describing quantum state evolution is:\n\n\\[\\boxed{i\\hbar \\frac{\\partial}{\\partial t} \\Psi(\\mathbf{r}, t) = \\hat{H} \\Psi(\\mathbf{r}, t)}\\]\n\n**Where:**\n- $i = \\sqrt{-1}$ is the imaginary unit\n- $\\hbar = \\frac{h}{2\\pi}$ is the reduced Planck constant\n- $\\Psi(\\mathbf{r}, t)$ is the state wave function\n- $\\hat{H} = -\\frac{\\hbar^2}{2m}\\nabla^2 + V(\\mathbf{r}, t)$ is the Hamiltonian operator";
-      } else if (low.includes('hola') || low.includes('buenos') || low.includes('quien creo') || low.includes('quién')) {
-        answer = "¡Hola! Bienvenido a **PRISM Core**. Esta plataforma fue concebida, diseñada y construida por el desarrollador en solitario **Niten Varshan**. Niten programó el backend al 100% desde cero (aislamiento de multi-inquilinos con PostgreSQL RLS, pgvector y runbooks SRE), combinándolo con herramientas de IA avanzadas para la interfaz. ¿En qué puedo ayudarte hoy?";
-      } else if (low.includes('bonjour') || low.includes('salut') || low.includes('qui a créé')) {
-        answer = "Bonjour! Bienvenue sur **PRISM Core**. Cette plateforme a été entièrement conçue, architecturée et développée par **Niten Varshan** en tant que développeur solo. Niten a programmé 100% du backend à partir de zéro (isolation multi-tenant PostgreSQL RLS, pgvector et infrastructure SRE). Comment puis-je vous aider aujourd'hui ?";
-      } else if (low.includes('namaste') || low.includes('kaun banaya') || low.includes('kya hai')) {
-        answer = "नमस्ते! **PRISM Core** में आपका स्वागत है। इस संपूर्ण प्लेटफ़ॉर्म की परिकल्पना, आर्किटेक्चर और निर्माण एकल डेवलपर **Niten Varshan** ने किया है। Niten ने स्क्रैच से 100% बैकएंड (PostgreSQL RLS कर्नेल अलगाव, pgvector इंडेक्सिंग और SRE इन्फ्रास्ट्रक्चर) को खुद कोड किया है। मैं आज आपकी क्या सहायता कर सकता हूँ?";
-      } else if (low.includes('vanakkam') || low.includes('yaaru') || low.includes('enna')) {
-        answer = "வணக்கம்! **PRISM Core** தளத்திற்கு உங்களை வரவேற்கிறோம். இந்த முழுமையான திட்டத்தை தனி டெவலப்பராக **Niten Varshan** தனது சொந்த சிந்தனையில் உருவாக்கியுள்ளார். பின்தளத்தை (PostgreSQL RLS மல்டி-டெனன்ட் தனிமைப்படுத்தல், pgvector மற்றும் SRE கட்டமைப்பு) 100% அவரே புதிதாக உருவாக்கினார். உங்களுக்கு எவ்வாறு உதவலாம்?";
+  generateTypewriterFallbackAsync(botDiv, userText) {
+    return new Promise((resolve) => {
+      let answer = null;
+      if (this.fallbackHandler) {
+        answer = this.fallbackHandler(userText);
       }
-    }
-    answer = answer || "Welcome to PRISM Core, created by solo developer Niten Varshan. Ask me any technical question, architecture comparison, or policy detail about Sentinel Mini SOC, Glamour Haven Salon, Apex Gear, or CloudPulse SaaS Ops!";
-    botDiv.innerHTML = '';
+      const low = userText.toLowerCase();
+      if (!answer || answer.includes('How can I assist') || answer.includes('online. Ask me') || answer.includes('Bonjour!') || answer.includes('Which hardware component')) {
+        if (low.includes('who made') || low.includes('who built') || low.includes('who created') || low.includes('developer') || low.includes('founder') || low.includes('niten') || low.includes('creator') || low.includes('author')) {
+          answer = "This entire website and all four PRISM Core projects were created by **Niten Varshan** as a solo developer! It was Niten's visionary idea that brought this platform to life. The backend was 100% built and engineered from scratch by Niten (PostgreSQL kernel RLS multi-tenancy, pgvector indexing, SRE infrastructure, and failover runbooks), while the modern frontends were crafted in collaboration with cutting-edge AI tools.";
+        } else if (low === 'hi' || low === 'hello' || low === 'hey' || low.includes('welcome') || low.includes('what is this') || low.includes('explain') || low.includes('about this')) {
+          answer = "Welcome to **PRISM Core**! This platform was conceived, architected, and built by solo developer **Niten Varshan**, whose original vision brought this entire ecosystem to life. Niten engineered the entire backend from scratch (PostgreSQL kernel RLS isolation, pgvector indexing, and enterprise SRE infrastructure) while pairing with advanced AI tools for the frontends. PRISM Core proves how one unified multi-tenant engine powers four production realities: Sentinel Mini SOC, Glamour Haven Salon, Apex Gear Tech Store, and CloudPulse SaaS Ops. How can I guide your exploration today?";
+        } else if (low.includes('switch') || low.includes('keyboard') || low.includes('ultramech') || low.includes('dac') || low.includes('headset') || low.includes('audio') || low.includes('store') || low.includes('apex')) {
+          answer = "In **Apex Gear Tech Store** (`store.html`), we feature the **Apex Planar-X Headset** ($349, 106mm planar magnetic drivers), **UltraMech Pro Gasket 75%** ($189, hot-swap, Cream linear switches), and **Apex StreamDAC** ($229, 32-bit/768kHz dual ESS Sabre). You can test acoustic switch thocks in the live sound room and use code `APEX10` for 10% off!";
+        } else if (low.includes('salon') || low.includes('balayage') || low.includes('keratin') || low.includes('scalp') || low.includes('head spa') || low.includes('booking') || low.includes('glamour')) {
+          answer = "In **Glamour Haven Salon & Spa** (`salon.html`), we offer Parisian hair wellness: Luxe Balayage ($260, bond repair), Japanese Head Spa ($140, 200x scalp trichology & waterfall hydrotherapy), and Brazilian Bio-Keratin ($310, lasts 5 months). Cancellations 24h prior receive a 100% full refund with zero fees.";
+        } else if (low.includes('rls') || low.includes('postgres') || low.includes('leak') || low.includes('isolation') || low.includes('ops') || low.includes('sla') || low.includes('cloudpulse')) {
+          answer = "In **CloudPulse SaaS Ops** (`ops.html`), multi-tenancy is enforced directly inside the PostgreSQL kernel using `Row Level Security (RLS)`. Cross-tenant injection attempts return Error 42501 with 0.00 bytes leaked. Sev 1 SLA guarantees automated paging in < 5 minutes with 60s DNS failover.";
+        } else if (low.includes('soc') || low.includes('threat') || low.includes('mitre') || low.includes('t1110') || low.includes('quarantine') || low.includes('waf') || low.includes('security') || low.includes('sentinel')) {
+          answer = "In **Sentinel Mini SOC** (`minisoc.html`), we provide autonomous SMB security triage mapping MITRE ATT&CK techniques (T1110 Credential Stuffing, T1059.006 Python Exec), 1-click edge WAF IP quarantine, and SOC 2 Type II CC6.1 compliance auditing.";
+        } else if (low.includes('prism') || low.includes('suite') || low.includes('all four') || low.includes('compare') || low.includes('project') || low.includes('reality')) {
+          answer = "### PRISM Core Suite: One Core Engine, Four Production Realities\n\n1. **Sentinel Mini SOC** (`minisoc.html`): Autonomous threat triage & edge WAF quarantine.\n2. **Apex Gear** (`store.html`): High-octane hardware boutique with Web Audio switch soundboard.\n3. **CloudPulse SaaS Ops** (`ops.html`): 3D telemetry wave & PostgreSQL RLS kernel isolation.\n4. **Glamour Haven Salon** (`salon.html`): Luxury appointment booking & conflict-free scheduling.";
+        } else if (low.includes('formula') || low.includes('math') || low.includes('equation') || low.includes('einstein') || low.includes('relativity') || low.includes('boxed') || low.includes('g_\\mu') || low.includes('t_\\mu')) {
+          answer = "### Einstein Field Equation (General Relativity)\n\nThe fundamental gravitational field equation with cosmological constant $\\Lambda$ is:\n\n\\[\\boxed{G_{\\mu\\nu} + \\Lambda g_{\\mu\\nu} = \\frac{8\\pi G}{c^4} T_{\\mu\\nu}}\\]\n\n**Component Breakdown:**\n- $G_{\\mu\\nu} = R_{\\mu\\nu} - \\frac{1}{2} R g_{\\mu\\nu}$: Einstein tensor (spacetime curvature)\n- $g_{\\mu\\nu}$: Spacetime metric tensor\n- $\\Lambda$: Cosmological constant (vacuum dark energy density)\n- $T_{\\mu\\nu}$: Stress-energy-momentum tensor of matter and radiation\n- $G$: Newton's gravitational constant ($6.674\\times 10^{-11} \\text{ m}^3\\text{kg}^{-1}\\text{s}^{-2}$)\n- $c$: Speed of light in vacuum ($2.998\\times 10^8 \\text{ m/s}$)";
+        } else if (low.includes('schrodinger') || low.includes('quantum') || low.includes('wave function') || low.includes('psi')) {
+          answer = "### Time-Dependent Schrödinger Equation (Quantum Mechanics)\n\nThe fundamental equation describing quantum state evolution is:\n\n\\[\\boxed{i\\hbar \\frac{\\partial}{\\partial t} \\Psi(\\mathbf{r}, t) = \\hat{H} \\Psi(\\mathbf{r}, t)}\\]\n\n**Where:**\n- $i = \\sqrt{-1}$ is the imaginary unit\n- $\\hbar = \\frac{h}{2\\pi}$ is the reduced Planck constant\n- $\\Psi(\\mathbf{r}, t)$ is the state wave function\n- $\\hat{H} = -\\frac{\\hbar^2}{2m}\\nabla^2 + V(\\mathbf{r}, t)$ is the Hamiltonian operator";
+        } else if (low.includes('hola') || low.includes('buenos') || low.includes('quien creo') || low.includes('quién')) {
+          answer = "¡Hola! Bienvenido a **PRISM Core**. Esta plataforma fue concebida, diseñada y construida por el desarrollador en solitario **Niten Varshan**. Niten programó el backend al 100% desde cero (aislamiento de multi-inquilinos con PostgreSQL RLS, pgvector y runbooks SRE), combinándolo con herramientas de IA avanzadas para la interfaz. ¿En qué puedo ayudarte hoy?";
+        } else if (low.includes('bonjour') || low.includes('salut') || low.includes('qui a créé')) {
+          answer = "Bonjour! Bienvenue sur **PRISM Core**. Cette plateforme a été entièrement conçue, architecturée et développée par **Niten Varshan** en tant que développeur solo. Niten a programmé 100% du backend à partir de zéro (isolation multi-tenant PostgreSQL RLS, pgvector et infrastructure SRE). Comment puis-je vous aider aujourd'hui ?";
+        } else if (low.includes('namaste') || low.includes('kaun banaya') || low.includes('kya hai')) {
+          answer = "नमस्ते! **PRISM Core** में आपका स्वागत है। इस संपूर्ण प्लेटफ़ॉर्म की परिकल्पना, आर्किटेक्चर और निर्माण एकल डेवलपर **Niten Varshan** ने किया है। Niten ने स्क्रैच से 100% बैकएंड (PostgreSQL RLS कर्नेल अलगाव, pgvector इंडेक्सिंग और SRE इन्फ्रास्ट्रक्चर) को खुद कोड किया है। मैं आज आपकी क्या सहायता कर सकता हूँ?";
+        } else if (low.includes('vanakkam') || low.includes('yaaru') || low.includes('enna')) {
+          answer = "வணக்கம்! **PRISM Core** தளத்திற்கு உங்களை வரவேற்கிறோம். இந்த முழுமையான திட்டத்தை தனி டெவலப்பராக **Niten Varshan** தனது சொந்த சிந்தனையில் உருவாக்கியுள்ளார். பின்தளத்தை (PostgreSQL RLS மல்டி-டெனன்ட் தனிமைப்படுத்தல், pgvector மற்றும் SRE கட்டமைப்பு) 100% அவரே புதிதாக உருவாக்கினார். உங்களுக்கு எவ்வாறு உதவலாம்?";
+        }
+      }
+      answer = answer || "Welcome to PRISM Core, created by solo developer Niten Varshan. Ask me any technical question, architecture comparison, or policy detail about Sentinel Mini SOC, Glamour Haven Salon, Apex Gear, or CloudPulse SaaS Ops!";
+      botDiv.innerHTML = '';
 
-    // Fast streaming typewriter animation to look and feel exactly like 800 tok/s real Llama 3.1!
-    let index = 0;
-    const speed = 12; // ms per word/slice
-    const words = answer.split(' ');
-    
-    const interval = setInterval(() => {
-      index += 2;
-      const currentSlice = words.slice(0, index).join(' ');
-      botDiv.innerHTML = this.formatMarkdown(currentSlice);
-      const container = document.getElementById(this.containerId);
-      if (container) container.scrollTop = container.scrollHeight;
-
-      if (index >= words.length) {
-        clearInterval(interval);
-        botDiv.innerHTML = `
-          <div>${this.formatMarkdown(answer)}</div>
-          <div style="margin-top: 8px; font-size: 0.72rem; color: #38BDF8; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 5px; display: flex; justify-content: space-between; align-items: center;">
-            <span>⚡ <em>Cloud Turbo Engine (Instant Mode)</em></span>
-            <button onclick="window.${this.appId}Engine.showSettings()" style="background:none; border:1px solid #38BDF8; color:#38BDF8; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:0.68rem;">API Key</button>
-          </div>
-        `;
-        this.messages.push({ role: 'assistant', content: answer });
+      // High-speed typewriter streaming (~10ms per word slice)
+      let index = 0;
+      const speed = 10;
+      const words = answer.split(' ');
+      
+      const interval = setInterval(() => {
+        index += 3;
+        const currentSlice = words.slice(0, index).join(' ');
+        botDiv.innerHTML = this.formatMarkdown(currentSlice);
+        const container = document.getElementById(this.containerId);
         if (container) container.scrollTop = container.scrollHeight;
-      }
-    }, speed);
+
+        if (index >= words.length) {
+          clearInterval(interval);
+          botDiv.innerHTML = `
+            <div>${this.formatMarkdown(answer)}</div>
+            <div style="margin-top: 8px; font-size: 0.72rem; color: #38BDF8; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 5px; display: flex; justify-content: space-between; align-items: center;">
+              <span>⚡ <em>Cloud Turbo Engine (Instant Mode)</em></span>
+              <button onclick="window.${this.appId}Engine.showSettings()" style="background:none; border:1px solid #38BDF8; color:#38BDF8; border-radius:4px; padding:1px 6px; cursor:pointer; font-size:0.68rem;">API Key / Settings</button>
+            </div>
+          `;
+          this.messages.push({ role: 'assistant', content: answer });
+          if (container) container.scrollTop = container.scrollHeight;
+          resolve();
+        }
+      }, speed);
+    });
   }
 
   ensureKaTeX() {
@@ -654,6 +897,59 @@ ${config.systemPrompt}
     }
   }
 
+  parseMarkdownTables(text) {
+    // Regex matching markdown table blocks: lines starting and ending with | or containing multiple columns
+    const tableRegex = /((?:^[ \t]*\|[^\n]+\|[ \t]*\r?\n)+)/gm;
+    return text.replace(tableRegex, (tableBlock) => {
+      const lines = tableBlock.trim().split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) return tableBlock;
+
+      // Identify separator line like |---|---| or |:---|:---|
+      let separatorIdx = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (/^\|(\s*:?-+:?\s*\|)+$/.test(lines[i])) {
+          separatorIdx = i;
+          break;
+        }
+      }
+
+      if (separatorIdx <= 0) {
+        return tableBlock;
+      }
+
+      const parseCells = (rowStr) => {
+        const cells = rowStr.split('|');
+        if (cells.length > 2) {
+          return cells.slice(1, -1).map(c => c.trim());
+        }
+        return cells.map(c => c.trim()).filter(Boolean);
+      };
+
+      const headerCells = parseCells(lines[separatorIdx - 1]);
+      const bodyRows = lines.slice(separatorIdx + 1);
+
+      let html = `<div class="agy-table-container"><table class="agy-styled-table">`;
+      html += `<thead><tr>`;
+      headerCells.forEach(cell => {
+        html += `<th>${cell}</th>`;
+      });
+      html += `</tr></thead><tbody>`;
+
+      bodyRows.forEach((rowStr) => {
+        const rowCells = parseCells(rowStr);
+        if (rowCells.length === 0) return;
+        html += `<tr>`;
+        rowCells.forEach(cell => {
+          html += `<td>${cell}</td>`;
+        });
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+      return html;
+    });
+  }
+
   formatMarkdown(text) {
     if (!text) return '';
 
@@ -705,24 +1001,31 @@ ${config.systemPrompt}
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // 4. Parse Headings (###, ##, #) so ### is NEVER displayed as raw text
+    // 4. Parse Markdown Tables (Converts raw | pipes into beautiful styled tables)
+    processed = this.parseMarkdownTables(processed);
+
+    // 5. Parse Headings (###, ##, #) so ### is NEVER displayed as raw text
     processed = processed.replace(/^###\s+(.*?)$/gm, '<h4 style="font-size: 1.05rem; font-weight: 800; margin: 12px 0 6px; color: #38BDF8; letter-spacing: -0.01em;">$1</h4>');
     processed = processed.replace(/^##\s+(.*?)$/gm, '<h3 style="font-size: 1.15rem; font-weight: 800; margin: 14px 0 6px; color: #60A5FA; letter-spacing: -0.01em;">$1</h3>');
     processed = processed.replace(/^#\s+(.*?)$/gm, '<h2 style="font-size: 1.25rem; font-weight: 900; margin: 16px 0 8px; color: #FFFFFF; letter-spacing: -0.02em;">$1</h2>');
 
-    // 5. Horizontal rules (--- or ***)
+    // 6. Horizontal rules (--- or ***)
     processed = processed.replace(/^---+$/gm, '<hr style="border:none; border-top:1px solid rgba(255,255,255,0.12); margin:12px 0;">');
 
-    // 6. Blockquotes (> text)
-    processed = processed.replace(/^>\s?(.*?)$/gm, '<blockquote style="border-left: 3px solid #38BDF8; margin: 8px 0; padding: 4px 12px; background: rgba(56, 189, 248, 0.06); border-radius: 0 6px 6px 0; font-style: italic;">$1</blockquote>');
+    // 7. Blockquotes (> text) — Clean rounded card without any harsh vertical rod line
+    processed = processed.replace(/^>\s?(.*?)$/gm, '<div style="margin: 8px 0; padding: 8px 12px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; color: #E0F2FE;">$1</div>');
 
-    // 7. Unordered Lists (- item or * item)
+    // 8. Unordered Lists (- item or * item)
     processed = processed.replace(/^[\*\-]\s+(.*?)$/gm, '<div style="display:flex; align-items:flex-start; gap:6px; margin:3px 0 3px 6px;"><span style="color:#38BDF8; font-size:1.1em; line-height:1.2;">•</span><span>$1</span></div>');
 
-    // 8. Ordered Lists (1. item)
+    // 9. Ordered Lists (1. item)
     processed = processed.replace(/^(\d+)\.\s+(.*?)$/gm, '<div style="display:flex; align-items:flex-start; gap:6px; margin:3px 0 3px 6px;"><strong style="color:#60A5FA; font-family:monospace; min-width:18px;">$1.</strong><span>$2</span></div>');
 
-    // 9. Bold and Italic formatting
+    // 10. Clean up stray pipe characters used as dividers in text (e.g. "Item 1 | Item 2" -> "Item 1 • Item 2")
+    processed = processed.replace(/(\s+)\|(\s+)/g, '$1•$2');
+    processed = processed.replace(/^\s*\|\s*/gm, '• ');
+
+    // 11. Bold and Italic formatting
     processed = processed
       .replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight:700; color:inherit;">$1</strong>')
       .replace(/__(.*?)__/g, '<strong style="font-weight:700; color:inherit;">$1</strong>')
@@ -732,14 +1035,14 @@ ${config.systemPrompt}
       .replace(/\n\n/g, '<div style="height:8px;"></div>')
       .replace(/\n/g, '<br>');
 
-    // 10. Restore Code Blocks
+    // 12. Restore Code Blocks
     codeBlocks.forEach((item, index) => {
       const codeId = `@@CODE_BLOCK_${index}@@`;
       const html = `<pre style="background:#090D16; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:10px 12px; margin:10px 0; overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:0.8rem; line-height:1.5; color:#E2E8F0;"><code>${item.code}</code></pre>`;
       processed = processed.replace(codeId, html);
     });
 
-    // 11. Render and substitute math placeholders
+    // 13. Render and substitute math placeholders
     mathPlaceholders.forEach((item, index) => {
       const blockId = `@@MATH_BLOCK_${index}@@`;
       const inlineId = `@@MATH_INLINE_${index}@@`;
