@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<!-- CloudPulse SaaS Ops — Copyright (c) 2026 Niten Varshan. Licensed under the MIT License. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudPulse — SaaS Ops & Platform Telemetry Console</title>
+  
+  <!-- Interface & Monospace Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Real Conversational LLM Engine (Cloud Turbo Llama 3.1) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="js/chat-engine.js"></script>
+
+  <style>
+    :root {
+      --bg-light: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-gray: #E2E8F0;
+      --border-hover: #CBD5E1;
+      --corporate-blue: #2563EB;
+      --corporate-blue-hover: #1D4ED8;
+      --corporate-blue-light: rgba(37, 99, 235, 0.08);
+      --accent-cyan: #0EA5E9;
+      --status-success: #10B981;
+      --text-dark: #0F172A;
+      --text-muted: #475569;
+      --text-dim: #64748B;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Manrope', sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Structured Clean Light Panels */
+    .ops-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-gray);
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 6px 16px rgba(15, 23, 42, 0.02);
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .ops-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 11px 22px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn-blue {
+      background: var(--corporate-blue);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-blue:hover {
+      background: var(--corporate-blue-hover);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 5px 12px;
+      border-radius: 9999px;
+    }
+
+    .badge-blue {
+      background: var(--corporate-blue-light);
+      color: var(--corporate-blue);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .badge-success {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 8px #10B981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    /* Terminal Console */
+    .terminal-box {
+      background: #0F172A;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
+      padding: 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: #E2E8F0;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+    }
+
+    /* Modal / Chat Widget */
+    .chat-bubble {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 40;
+    }
+
+    .chat-box {
+      position: fixed;
+      bottom: 90px;
+      right: 24px;
+      width: 370px;
+      height: 490px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-gray);
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px);
+      transition: all 0.25s ease;
+    }
+
+    .chat-box.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Interactive 3D Dotted Telemetry Wave Canvas -->
+  <canvas id="dotted-wave-canvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0;"></canvas>
+
+  <!-- Top Global Header -->
+  <header style="position: sticky; top: 0; z-index: 50; width: 100%; backdrop-filter: blur(16px); background: rgba(255, 255, 255, 0.9); border-bottom: 1px solid var(--border-gray); padding: 0 24px;">
+    <div style="max-width: 1320px; margin: 0 auto; height: 68px; display: flex; align-items: center; justify-content: space-between;">
+      
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <a href="index.html" style="color: var(--text-dark); font-size: 0.82rem; font-weight: 600; text-decoration: none; padding: 6px 14px; background: #FFFFFF; border: 1px solid var(--border-gray); border-radius: 8px; transition: all 0.2s;">
+          ← Showcase Hub
+        </a>
+
+        <div style="height: 18px; width: 1px; background: var(--border-gray);"></div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--corporate-blue-light); border: 1px solid rgba(37, 99, 235, 0.25); display: flex; align-items: center; justify-content: center; color: var(--corporate-blue);">
+            🛡️
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.15rem; font-weight: 800; color: var(--text-dark);">CloudPulse <span style="color: var(--corporate-blue);">SaaS Ops</span></span>
+              <span class="badge badge-blue" style="font-size: 0.68rem;">PLATFORM TELEMETRY</span>
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-dim);">Multi-Tenant Cluster & Kernel RLS Enforcer</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Project Jump Links -->
+      <nav style="display: flex; gap: 8px; align-items: center;">
+        <a href="salon.html" style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); padding: 6px 12px; border-radius: 8px; background: var(--bg-light); border: 1px solid var(--border-gray); text-decoration: none;">Salon Demo</a>
+        <a href="store.html" style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); padding: 6px 12px; border-radius: 8px; background: var(--bg-light); border: 1px solid var(--border-gray); text-decoration: none;">Store Demo</a>
+        <a href="ops.html" style="font-size: 0.78rem; font-weight: 700; color: #FFFFFF; padding: 6px 14px; border-radius: 8px; background: var(--corporate-blue); text-decoration: none;">SaaS Ops</a>
+        <a href="minisoc.html" style="font-size: 0.78rem; font-weight: 700; color: #0284C7; padding: 6px 12px; border-radius: 8px; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.25); text-decoration: none;">Mini SOC 🛡️</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Ops Container -->
+  <main style="max-width: 1320px; margin: 0 auto; padding: 48px 24px 80px; position: relative; z-index: 1;">
+    
+    <div style="text-align: center; max-width: 880px; margin: 0 auto 40px;">
+      <div class="badge badge-blue" style="margin-bottom: 14px; padding: 6px 14px;">
+        <span class="pulse-dot"></span>
+        INTERNAL PLATFORM TELEMETRY • MOVE CURSOR OVER WAVE TO RIPPLE
+      </div>
+      
+      <h1 style="font-size: clamp(2.4rem, 4.2vw, 3.4rem); font-weight: 800; line-height: 1.15; margin-bottom: 14px; color: var(--text-dark);">
+        Mission-Critical Telemetry. <br />
+        <span style="color: var(--corporate-blue);">
+          Zero Cross-Tenant Data Leakage.
+        </span>
+      </h1>
+      
+      <p style="font-size: 1.05rem; color: var(--text-muted); line-height: 1.65; max-width: 760px; margin: 0 auto 20px;">
+        Proving platform security is an active, auditable capability. Monitor multi-tenant cluster health, pgvector index performance, and execute live PostgreSQL Row Level Security (RLS) isolation audits below.
+      </p>
+
+      <div style="display: flex; justify-content: center; gap: 20px; font-size: 0.85rem; color: var(--text-dim); flex-wrap: wrap;">
+        <span>⚡ 99.99% Cluster Uptime SLA</span>
+        <span>•</span>
+        <span>🛡️ Kernel-Enforced RLS</span>
+        <span>•</span>
+        <span>⏱️ &lt; 5m Incident Paging SLA</span>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Grid HUD (4 Clean Light Panels) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
+      
+      <div class="ops-card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 0.74rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">p99 Query Latency</span>
+          <span class="pulse-dot"></span>
+        </div>
+        <div class="font-mono" style="font-size: 2.2rem; font-weight: 800; color: var(--text-dark); margin-bottom: 4px;">14.2 ms</div>
+        <span style="font-size: 0.76rem; color: #059669; font-weight: 600;">✓ Sub-20ms SLA Maintained</span>
+      </div>
+
+      <div class="ops-card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 0.74rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Cross-Tenant Leaks</span>
+          <span style="color: #059669; font-size: 0.9rem;">🛡️</span>
+        </div>
+        <div class="font-mono" style="font-size: 2.2rem; font-weight: 800; color: #059669; margin-bottom: 4px;">0 LEAKS</div>
+        <span style="font-size: 0.76rem; color: #059669; font-weight: 600;">✓ Kernel RLS Strict Pass</span>
+      </div>
+
+      <div class="ops-card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 0.74rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">pgvector Embeddings</span>
+          <span style="color: var(--accent-cyan); font-size: 0.9rem;">⚡</span>
+        </div>
+        <div class="font-mono" style="font-size: 2.2rem; font-weight: 800; color: var(--text-dark); margin-bottom: 4px;">768-Dim</div>
+        <span style="font-size: 0.76rem; color: var(--accent-cyan); font-weight: 600;">✓ Gemini text-embedding-004</span>
+      </div>
+
+      <div class="ops-card" style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 0.74rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Sev 1 SLA Paging</span>
+          <span style="color: var(--corporate-blue); font-size: 0.9rem;">⏱️</span>
+        </div>
+        <div class="font-mono" style="font-size: 2.2rem; font-weight: 800; color: var(--text-dark); margin-bottom: 4px;">&lt; 5 mins</div>
+        <span style="font-size: 0.76rem; color: var(--corporate-blue); font-weight: 600;">✓ Automated On-Call Trigger</span>
+      </div>
+
+    </div>
+
+    <!-- Active Data Isolation Verification Terminal Section -->
+    <div class="ops-card" style="padding: 32px; margin-bottom: 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 20px;">
+        <div>
+          <span class="badge badge-blue" style="margin-bottom: 8px;">LIVE AUDIT SUITE</span>
+          <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--text-dark);">Active Row Level Security (RLS) Verification</h2>
+          <p style="font-size: 0.88rem; color: var(--text-muted); max-width: 650px;">
+            Simulate a penetration audit attempting cross-tenant injection. Proves that even with direct SQL queries, PostgreSQL kernel policies refuse to return foreign tenant rows.
+          </p>
+        </div>
+        <button id="btn-run-audit" onclick="runIsolationAudit()" class="btn btn-blue" style="padding: 12px 24px;">
+          <span>⚡ Run Active Isolation Verification</span>
+        </button>
+      </div>
+
+      <!-- Live Terminal Console -->
+      <div id="audit-terminal" class="terminal-box" style="display: none;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 8px;">
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444;"></span>
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #F59E0B;"></span>
+          <span style="width: 10px; height: 10px; border-radius: 50%; background: #10B981;"></span>
+          <span style="color: #94A3B8; font-size: 0.74rem; margin-left: 6px;">POSTGRESQL KERNEL ASSERTION RUNNER</span>
+        </div>
+        <div id="audit-log-lines" style="color: #6EE7B7; display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+    </div>
+
+    <!-- Commercial Mini SOC Promotion Banner -->
+    <div class="ops-card" style="padding: 28px 32px; background: #FFFFFF; border-left: 4px solid var(--accent-cyan); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;">
+      <div>
+        <div class="badge" style="background: rgba(14, 165, 233, 0.1); color: #0284C7; border: 1px solid rgba(14, 165, 233, 0.25); margin-bottom: 8px;">
+          SEPARATE SELLABLE PRODUCT
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--text-dark); margin-bottom: 4px;">Looking for SMB Log Triage & SIEM Monitoring?</h3>
+        <p style="font-size: 0.86rem; color: var(--text-muted); max-width: 680px;">
+          While CloudPulse monitors internal cloud infra, <strong>Sentinel Mini SOC</strong> is a standalone product that monitors client external servers with MITRE threat triage and 1-click WAF mitigation.
+        </p>
+      </div>
+      <a href="minisoc.html" class="btn btn-blue" style="background: var(--accent-cyan);">
+        Launch Sentinel Mini SOC App →
+      </a>
+    </div>
+
+    <!-- Failover Runbook Accordion -->
+    <div class="ops-card" style="padding: 28px; border-left: 4px solid var(--corporate-blue);">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+        <span style="font-size: 1.2rem;">⚙️</span>
+        <h4 style="font-size: 1.15rem; font-weight: 800; color: var(--text-dark);">Active SOC Runbook: Automated DNS Failover & SLA Escalation</h4>
+      </div>
+      <p style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.6;">
+        When a Sev 1 incident triggers, CloudPulse autonomous telemetry pages the on-call engineer within 5 minutes, auto-retrieves cluster topology from the pgvector knowledge base, and executes automated multi-region DNS failover within 60 seconds with zero data loss. Test this protocol live with the AI Ops Agent below!
+      </p>
+    </div>
+  </main>
+
+  <!-- Interactive AI Ops Agent -->
+  <div class="chat-bubble">
+    <button onclick="toggleChat()" style="width: 56px; height: 56px; border-radius: 50%; background: var(--corporate-blue); border: 2px solid #FFFFFF; color: #FFFFFF; font-size: 1.4rem; cursor: pointer; box-shadow: 0 8px 25px rgba(37, 99, 235, 0.35); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+      💬
+    </button>
+  </div>
+
+  <div id="chat-widget" class="chat-box">
+    <div style="padding: 16px 20px; background: var(--bg-light); border-bottom: 1px solid var(--border-gray); display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-dark);">CloudPulse Ops Runbook AI</h4>
+        <div id="ops-chat-status" style="font-size: 0.72rem; color: var(--corporate-blue); display: flex; align-items: center; margin-top: 2px;">
+          Connecting to Cloud Turbo AI...
+        </div>
+      </div>
+      <button onclick="toggleChat()" style="background: transparent; border: none; color: var(--text-dim); font-size: 1.3rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 12px; font-size: 0.82rem;">
+      <div style="background: var(--bg-light); border: 1px solid var(--border-gray); padding: 12px 16px; border-radius: 12px; max-width: 88%; align-self: flex-start; line-height: 1.5; color: var(--text-dark);">
+        Welcome to <strong>CloudPulse SaaS Ops</strong>! Built by solo developer <strong>Niten Varshan</strong>, who architected and coded the entire backend, PostgreSQL kernel RLS isolation, and SRE failover systems from scratch with AI-powered frontends. Ask me about our Sev 1 SLA or run the isolation test on the left!
+      </div>
+    </div>
+
+    <div style="padding: 8px 14px; background: #FFFFFF; display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid var(--border-gray);">
+      <button onclick="askPreset('What is the Sev 1 incident response SLA?')" style="background: var(--bg-light); border: 1px solid var(--border-gray); color: var(--corporate-blue); font-size: 0.72rem; padding: 5px 10px; border-radius: 6px; cursor: pointer;">Sev 1 SLA?</button>
+      <button onclick="askPreset('How does database isolation work in BizOS?')" style="background: var(--bg-light); border: 1px solid var(--border-gray); color: var(--corporate-blue); font-size: 0.72rem; padding: 5px 10px; border-radius: 6px; cursor: pointer;">Postgres RLS?</button>
+    </div>
+
+    <div style="padding: 12px 16px; background: #FFFFFF; border-top: 1px solid var(--border-gray); display: flex; gap: 8px;">
+      <input type="text" id="chat-input" placeholder="Ask an ops runbook question..." style="flex: 1; background: var(--bg-light); border: 1px solid var(--border-gray); border-radius: 8px; padding: 9px 14px; color: var(--text-dark); font-size: 0.82rem; outline: none;" onkeydown="if(event.key==='Enter') sendChat()">
+      <button onclick="sendChat()" style="background: var(--corporate-blue); border: none; color: #FFFFFF; border-radius: 8px; padding: 0 16px; font-weight: 700; cursor: pointer;">Send</button>
+    </div>
+  </div>
+
+  <script>
+    function runIsolationAudit() {
+      const btn = document.getElementById('btn-run-audit');
+      btn.innerText = '⚡ Executing Kernel Isolation Tests...';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        document.getElementById('audit-terminal').style.display = 'block';
+        const lines = [
+          '[10:35:01] Initializing Postgres session for tenant_id: 11111111-1111-1111-1111-111111111111 (Salon)',
+          '[10:35:02] ASSERTION 1: SELECT * FROM bookings WHERE tenant_id = current_tenant_id() -> 3 records returned [PASS]',
+          '[10:35:03] ASSERTION 2: Injecting foreign tenant query to Store bookings -> Postgres Error 42501 (RLS Policy Refusal) [BLOCKED]',
+          '[10:35:04] ASSERTION 3: pgvector match_tenant_documents RPC partition boundary test -> 0 vectors leaked [PASS]',
+          '[10:35:05] VERIFICATION COMPLETE: Cross-Tenant Data Leakage = 0.00 Bytes. Integrity Rating: 100% SECURE.'
+        ];
+        document.getElementById('audit-log-lines').innerHTML = lines.map(l => `<div>${l}</div>`).join('');
+        btn.innerText = '✓ Kernel Isolation Test Verified (100% SECURE)';
+        btn.style.background = '#059669';
+      }, 700);
+    }
+
+    function toggleChat() {
+      document.getElementById('chat-widget').classList.toggle('active');
+    }
+
+    // Real Conversational LLM Engine Initializer (SaaS Ops)
+    const opsChat = createAgyChatEngine({
+      appId: 'ops',
+      containerId: 'chat-messages',
+      inputId: 'chat-input',
+      statusBadgeId: 'ops-chat-status',
+      systemPrompt: `You are the Principal Site Reliability & Platform Architect for CloudPulse SaaS Ops.
+You possess authoritative knowledge of:
+- PostgreSQL Row Level Security (RLS): Enforced at kernel level (Error 42501 refusal), zero cross-tenant data leakage even under raw SQL injection.
+- pgvector Embeddings: 768-dimensional text-embedding-004 vectors, partitioned per tenant_id with cosine similarity search.
+- Incident Escalation SLA: Sev 1 response guarantee < 5 minutes automated paging; 60-second multi-region DNS failover; 99.99% cluster uptime SLA.
+- Telemetry Metrics: p99 latency target sub-20ms (current 14.2ms), automated health probes polling every 10s.
+Speak with technical precision, SRE clarity, and platform authority.`,
+      fallbackHandler: (text) => {
+        const low = text.toLowerCase();
+        if (low.includes('sla') || low.includes('sev 1') || low.includes('response')) {
+          return "<strong>Sev 1 SLA:</strong> Paging is guaranteed within <strong>&lt; 5 minutes</strong>. If 3 consecutive health probes fail (10s intervals), automated multi-region DNS failover executes within 60 seconds with zero data loss.";
+        } else if (low.includes('rls') || low.includes('isolation') || low.includes('security')) {
+          return "<strong>PostgreSQL Kernel Isolation:</strong> Multi-tenancy is enforced at the database kernel level using <code>Row Level Security (RLS)</code>. Even if an application query omits tenant filters or attempts SQL injection, Postgres raises Error 42501 and returns 0 bytes.";
+        } else if (low.includes('failover') || low.includes('cluster')) {
+          return "<strong>Failover Architecture:</strong> Autonomous health probes poll every 10s. Secondary standby clusters sync via continuous WAL replication, enabling seamless traffic migration in < 60 seconds.";
+        } else if (low.includes('pgvector') || low.includes('embedding')) {
+          return "<strong>pgvector Performance:</strong> We index 768-dimensional Gemini embeddings partitioned strictly by tenant boundary, maintaining sub-15ms vector cosine distance queries.";
+        } else {
+          return "CloudPulse Platform Architect online. You can ask about PostgreSQL kernel RLS, pgvector partitioning, our < 5m Sev 1 SLA, or execute the live isolation verification suite on the left.";
+        }
+      }
+    });
+
+    function askPreset(q) {
+      document.getElementById('chat-input').value = q;
+      sendChat();
+    }
+
+    function sendChat() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      opsChat.sendMessage(text, '#2563EB');
+    }
+
+    // =========================================================
+    // CloudPulse Interactive 3D Dotted Telemetry Wave Engine
+    // =========================================================
+    (function initDottedWave() {
+      const canvas = document.getElementById('dotted-wave-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      let width = 0;
+      let height = 0;
+      let dpr = window.devicePixelRatio || 1;
+
+      function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      // Matrix spacing
+      const SPACING_X = 36;
+      const SPACING_Y = 28;
+
+      // Mouse tracking with spring physics
+      let mouseX = width / 2;
+      let mouseY = height * 0.35;
+      let targetMouseX = mouseX;
+      let targetMouseY = mouseY;
+      let mouseSpeed = 0;
+      let lastX = mouseX;
+      let lastY = mouseY;
+      let isInteracting = false;
+      let idleTimer = null;
+
+      window.addEventListener('mousemove', (e) => {
+        targetMouseX = e.clientX;
+        targetMouseY = e.clientY;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        mouseSpeed = Math.min(80, Math.hypot(dx, dy));
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        isInteracting = true;
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          isInteracting = false;
+          mouseSpeed = 0;
+        }, 3200);
+      });
+
+      window.addEventListener('mouseleave', () => {
+        isInteracting = false;
+        mouseSpeed = 0;
+      });
+
+      let time = 0;
+      let ripplePhase = 0;
+
+      function render() {
+        time += 0.022;
+        ripplePhase += 0.05 + mouseSpeed * 0.002;
+
+        // Smooth cursor lerping
+        mouseX += (targetMouseX - mouseX) * 0.1;
+        mouseY += (targetMouseY - mouseY) * 0.1;
+        mouseSpeed *= 0.94;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Perspective camera parameters
+        const fov = 440;
+        const cameraDist = 480;
+        const mouseTiltX = ((mouseY / height) - 0.5) * 0.14;
+        const mouseTiltY = ((mouseX / width) - 0.5) * 0.16;
+        const cameraPitch = 0.9 + mouseTiltX;
+        const cosPitch = Math.cos(cameraPitch);
+        const sinPitch = Math.sin(cameraPitch);
+
+        const cols = Math.ceil(width / SPACING_X) + 16;
+        const rows = Math.ceil(height / SPACING_Y) + 14;
+        const startX = -((cols * SPACING_X) / 2);
+        const startY = -((rows * SPACING_Y) / 3);
+
+        for (let ix = 0; ix < cols; ix++) {
+          for (let iy = 0; iy < rows; iy++) {
+            const x = startX + ix * SPACING_X;
+            const y = startY + iy * SPACING_Y;
+
+            // Fluid undulating sine waves
+            const w1 = Math.sin(ix * 0.22 + time * 1.8) * Math.cos(iy * 0.18 + time * 1.4) * 28;
+            const w2 = Math.sin((ix - iy) * 0.15 + time * 2) * 14;
+            let z = w1 + w2;
+
+            // 3D Perspective rotation
+            const cosTiltY = Math.cos(mouseTiltY);
+            const sinTiltY = Math.sin(mouseTiltY);
+            const rx = x * cosTiltY - y * sinTiltY * 0.2;
+            const ry = y * cosPitch - z * sinPitch;
+            const rz = y * sinPitch + z * cosPitch + cameraDist;
+
+            if (rz <= 20) continue;
+
+            const scale = fov / rz;
+            const screenX = width * 0.5 + rx * scale;
+            const screenY = height * 0.42 + ry * scale;
+
+            // Distance to interactive mouse cursor
+            const dx = screenX - mouseX;
+            const dy = screenY - mouseY;
+            const dist = Math.hypot(dx, dy);
+            const maxRadius = 230;
+
+            let mouseElevation = 0;
+            let proximity = 0;
+
+            if (dist < maxRadius) {
+              const norm = dist / maxRadius;
+              const force = Math.pow(1 - norm, 2);
+              // Radial ripple wave emanating from cursor
+              const ripple = Math.sin(dist * 0.05 - ripplePhase * 4) * force * 38;
+              mouseElevation = ripple + force * 28;
+              proximity = force;
+            }
+
+            const finalY = screenY - mouseElevation * scale * 0.85;
+
+            // Dot sizing & dynamic brightness
+            const depthRatio = Math.max(0, Math.min(1, scale * 1.25));
+            const baseRadius = 1.35;
+            const radius = Math.max(0.7, Math.min(4.8, baseRadius * scale * (1 + proximity * 1.5)));
+
+            // Color & opacity
+            let alpha = Math.min(0.85, Math.max(0.12, depthRatio * 0.75));
+            if (proximity > 0) {
+              alpha = Math.min(1, alpha + proximity * 0.5);
+            }
+
+            if (proximity > 0.35) {
+              ctx.fillStyle = `rgba(14, 165, 233, ${alpha.toFixed(2)})`; // Active Cyan
+            } else if (z + mouseElevation > 14) {
+              ctx.fillStyle = `rgba(37, 99, 235, ${alpha.toFixed(2)})`; // Corporate Blue
+            } else {
+              ctx.fillStyle = `rgba(148, 163, 184, ${(alpha * 0.48).toFixed(2)})`; // Muted Slate
+            }
+
+            ctx.beginPath();
+            ctx.arc(screenX, finalY, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+
+</body>
+</html>

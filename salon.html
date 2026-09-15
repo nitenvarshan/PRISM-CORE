@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<!-- Glamour Haven Salon & Spa — Copyright (c) 2026 Niten Varshan. Licensed under the MIT License. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glamour Haven Salon & Spa — Luxury Hair Rituals</title>
+  
+  <!-- Curated Luxury Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=Montserrat:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Real Conversational LLM Engine (Cloud Turbo Llama 3.1) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="js/chat-engine.js"></script>
+
+  <style>
+    :root {
+      --bg-cream: #FDFBF7;
+      --bg-surface: #FFFFFF;
+      --bg-warm-card: #FAF6F0;
+      --border-soft: #EFE7DE;
+      --border-accent: #E3D1C2;
+      --rose-gold: #B76E79;
+      --rose-gold-hover: #9E5661;
+      --rose-gold-light: rgba(183, 110, 121, 0.12);
+      --terracotta: #C4735E;
+      --sage: #8DA399;
+      --text-espresso: #2B2523;
+      --text-charcoal: #4A4441;
+      --text-muted: #7D7571;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: var(--bg-cream);
+      color: var(--text-espresso);
+      line-height: 1.6;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Soft Ambient Warm Glow */
+    .warm-glow {
+      position: fixed;
+      top: -10%;
+      right: 10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(183, 110, 121, 0.08), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .warm-glow-left {
+      position: fixed;
+      bottom: 5%;
+      left: 5%;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(141, 163, 153, 0.1), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Elegant Light Cards */
+    .salon-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-soft);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(43, 37, 35, 0.04), 0 1px 3px rgba(43, 37, 35, 0.02);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .salon-card:hover {
+      border-color: var(--border-accent);
+      box-shadow: 0 15px 40px rgba(183, 110, 121, 0.08), 0 4px 12px rgba(43, 37, 35, 0.04);
+      transform: translateY(-3px);
+    }
+
+    /* Headings in Editorial Luxury Serif */
+    h1, h2, h3, .font-serif {
+      font-family: 'Playfair Display', Georgia, serif;
+      letter-spacing: -0.02em;
+      color: var(--text-espresso);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 12px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn-rosegold {
+      background: linear-gradient(135deg, #B76E79, #9E5661);
+      color: #FFFFFF;
+      box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);
+    }
+
+    .btn-rosegold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(183, 110, 121, 0.45);
+      filter: brightness(1.05);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 5px 12px;
+      border-radius: 9999px;
+    }
+
+    .badge-rose {
+      background: var(--rose-gold-light);
+      color: var(--rose-gold);
+      border: 1px solid rgba(183, 110, 121, 0.25);
+    }
+
+    .badge-sage {
+      background: rgba(141, 163, 153, 0.15);
+      color: #4A6357;
+      border: 1px solid rgba(141, 163, 153, 0.3);
+    }
+
+    /* Luxury Slot Pills */
+    .slot-pill {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--bg-warm-card);
+      border: 1px solid var(--border-soft);
+      color: var(--text-charcoal);
+      font-size: 0.86rem;
+      font-family: 'JetBrains Mono', monospace;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.22s ease;
+    }
+
+    .slot-pill:hover, .slot-pill.active {
+      background: #FFFFFF;
+      border-color: var(--rose-gold);
+      color: var(--rose-gold);
+      box-shadow: 0 4px 15px rgba(183, 110, 121, 0.2);
+      transform: translateY(-1px);
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(43, 37, 35, 0.4);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 520px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-accent);
+      border-radius: 24px;
+      padding: 34px;
+      box-shadow: 0 25px 60px rgba(43, 37, 35, 0.15);
+    }
+
+    /* Concierge Chat Widget */
+    .chat-bubble {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 40;
+    }
+
+    .chat-box {
+      position: fixed;
+      bottom: 90px;
+      right: 24px;
+      width: 370px;
+      height: 490px;
+      background: #FFFFFF;
+      border: 1px solid var(--border-accent);
+      border-radius: 22px;
+      box-shadow: 0 20px 50px rgba(43, 37, 35, 0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .chat-box.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="warm-glow"></div>
+  <div class="warm-glow-left"></div>
+
+  <!-- Top Global Header -->
+  <header style="position: sticky; top: 0; z-index: 50; width: 100%; backdrop-filter: blur(20px); background: rgba(253, 251, 247, 0.88); border-bottom: 1px solid var(--border-soft); padding: 0 24px;">
+    <div style="max-width: 1320px; margin: 0 auto; height: 72px; display: flex; align-items: center; justify-content: space-between;">
+      
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <a href="index.html" style="color: var(--text-charcoal); font-size: 0.82rem; font-weight: 600; text-decoration: none; padding: 7px 14px; background: #FFFFFF; border: 1px solid var(--border-soft); border-radius: 10px; transition: all 0.2s;">
+          ← Showcase Hub
+        </a>
+
+        <div style="height: 18px; width: 1px; background: var(--border-soft);"></div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 38px; height: 38px; border-radius: 11px; background: var(--rose-gold-light); border: 1px solid rgba(183, 110, 121, 0.3); display: flex; align-items: center; justify-content: center; color: var(--rose-gold); font-size: 1.1rem;">
+            ✂
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="font-serif" style="font-size: 1.25rem; font-weight: 700; color: var(--text-espresso);">Glamour <span style="color: var(--rose-gold); font-style: italic;">Haven</span></span>
+              <span class="badge badge-rose" style="font-size: 0.68rem;">LUXURY SALON & SPA</span>
+            </div>
+            <p style="font-size: 0.72rem; color: var(--text-muted);">Parisian Master Color & Scalp Therapy</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Project Jump Links -->
+      <nav style="display: flex; gap: 8px; align-items: center;">
+        <a href="salon.html" style="font-size: 0.78rem; font-weight: 700; color: #FFFFFF; padding: 7px 14px; border-radius: 10px; background: var(--rose-gold); text-decoration: none;">Salon Demo</a>
+        <a href="store.html" style="font-size: 0.78rem; font-weight: 600; color: var(--text-charcoal); padding: 7px 14px; border-radius: 10px; background: #FFFFFF; border: 1px solid var(--border-soft); text-decoration: none;">Store Demo</a>
+        <a href="ops.html" style="font-size: 0.78rem; font-weight: 600; color: var(--text-charcoal); padding: 7px 14px; border-radius: 10px; background: #FFFFFF; border: 1px solid var(--border-soft); text-decoration: none;">SaaS Ops</a>
+        <a href="minisoc.html" style="font-size: 0.78rem; font-weight: 700; color: #0284C7; padding: 7px 14px; border-radius: 10px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); text-decoration: none;">Mini SOC 🛡️</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Editorial Hero Section -->
+  <main style="max-width: 1300px; margin: 0 auto; padding: 50px 24px 90px; position: relative; z-index: 1;">
+    
+    <div style="text-align: center; max-width: 860px; margin: 0 auto 46px;">
+      <div class="badge badge-rose" style="margin-bottom: 16px; padding: 6px 16px;">
+        PARISIAN MASTER COLOR & CELLULAR SCALP THERAPY
+      </div>
+      
+      <h1 style="font-size: clamp(2.6rem, 4.5vw, 3.8rem); font-weight: 700; line-height: 1.15; margin-bottom: 16px; color: var(--text-espresso);">
+        Bespoke Color & <br />
+        <span style="color: var(--rose-gold); font-style: italic;">
+          Luxury Hair Rituals.
+        </span>
+      </h1>
+      
+      <p style="font-size: 1.08rem; color: var(--text-charcoal); line-height: 1.7; max-width: 720px; margin: 0 auto 24px;">
+        Elevating hair wellness to an art form. Select your signature ritual below to view real-time stylist availability with automated slot conflict prevention.
+      </p>
+      
+      <div style="display: flex; justify-content: center; gap: 20px; font-size: 0.86rem; color: var(--text-muted); flex-wrap: wrap;">
+        <span>⭐ 4.98 Rating (340+ Verified Appointments)</span>
+        <span>•</span>
+        <span>🏆 Best Colorist Studio 2025</span>
+        <span>•</span>
+        <span style="color: #059669; font-weight: 600;">🛡️ 24-Hour Free Cancellation Policy</span>
+      </div>
+    </div>
+
+    <!-- Booking Interface: 2-Column Split Layout -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 32px; align-items: flex-start;">
+      
+      <!-- Left Column: Service Menu -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+          <h2 style="font-size: 1.55rem; font-weight: 700; color: var(--text-espresso);">Signature Treatment Menu</h2>
+          <span class="badge badge-sage">4 Rituals Available</span>
+        </div>
+
+        <div id="service-list" style="display: flex; flex-direction: column; gap: 16px;">
+          
+          <!-- Service 1 -->
+          <div class="salon-card" onclick="selectService('srv-1', 'Signature Haircut & Botanical Blowout', 95, 60)" id="card-srv-1" style="padding: 22px; cursor: pointer; border-color: var(--rose-gold); box-shadow: 0 4px 20px rgba(183, 110, 121, 0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-espresso);">Signature Haircut & Botanical Blowout</h3>
+                <p style="font-size: 0.85rem; color: var(--text-charcoal); margin: 6px 0 12px; line-height: 1.5;">Custom texture cut tailored to face architecture, organic herbal cleanse, and French blowout finish.</p>
+                <span style="font-size: 0.74rem; font-family: 'JetBrains Mono', monospace; background: var(--bg-warm-card); padding: 4px 10px; border-radius: 8px; color: var(--rose-gold); border: 1px solid var(--border-accent);">⏱ 60 mins • Master Stylist</span>
+              </div>
+              <span style="font-size: 1.5rem; font-weight: 800; color: var(--rose-gold); font-family: 'Playfair Display', serif;">$95</span>
+            </div>
+          </div>
+
+          <!-- Service 2 -->
+          <div class="salon-card" onclick="selectService('srv-2', 'Luxe Balayage & French Gloss', 260, 180)" id="card-srv-2" style="padding: 22px; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-espresso);">Luxe Balayage & French Gloss</h3>
+                <p style="font-size: 0.85rem; color: var(--text-charcoal); margin: 6px 0 12px; line-height: 1.5;">Hand-painted dimensional lightening, bond repair infusion, and signature luminous toner.</p>
+                <span style="font-size: 0.74rem; font-family: 'JetBrains Mono', monospace; background: var(--bg-warm-card); padding: 4px 10px; border-radius: 8px; color: var(--rose-gold); border: 1px solid var(--border-accent);">⏱ 180 mins • Senior Colorist</span>
+              </div>
+              <span style="font-size: 1.5rem; font-weight: 800; color: var(--rose-gold); font-family: 'Playfair Display', serif;">$260</span>
+            </div>
+          </div>
+
+          <!-- Service 3 -->
+          <div class="salon-card" onclick="selectService('srv-3', 'Japanese Head Spa Scalp Therapy', 140, 75)" id="card-srv-3" style="padding: 22px; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-espresso);">Japanese Head Spa Scalp Therapy</h3>
+                <p style="font-size: 0.85rem; color: var(--text-charcoal); margin: 6px 0 12px; line-height: 1.5;">200x microscopic scalp analysis, carbonated waterfall hydrotherapy, herbal detox, and Shiatsu massage.</p>
+                <span style="font-size: 0.74rem; font-family: 'JetBrains Mono', monospace; background: var(--bg-warm-card); padding: 4px 10px; border-radius: 8px; color: var(--rose-gold); border: 1px solid var(--border-accent);">⏱ 75 mins • Trichologist Certified</span>
+              </div>
+              <span style="font-size: 1.5rem; font-weight: 800; color: var(--rose-gold); font-family: 'Playfair Display', serif;">$140</span>
+            </div>
+          </div>
+
+          <!-- Service 4 -->
+          <div class="salon-card" onclick="selectService('srv-4', 'Brazilian Bio-Keratin Infusion', 310, 150)" id="card-srv-4" style="padding: 22px; cursor: pointer;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-espresso);">Brazilian Bio-Keratin Infusion</h3>
+                <p style="font-size: 0.85rem; color: var(--text-charcoal); margin: 6px 0 12px; line-height: 1.5;">Formaldehyde-free keratin matrix rebuilding damaged cuticle for mirror glass shine up to 5 months.</p>
+                <span style="font-size: 0.74rem; font-family: 'JetBrains Mono', monospace; background: var(--bg-warm-card); padding: 4px 10px; border-radius: 8px; color: var(--rose-gold); border: 1px solid var(--border-accent);">⏱ 150 mins • Restorative Specialist</span>
+              </div>
+              <span style="font-size: 1.5rem; font-weight: 800; color: var(--rose-gold); font-family: 'Playfair Display', serif;">$310</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Cancellation Policy Card -->
+        <div class="salon-card" style="margin-top: 20px; padding: 22px; background: var(--bg-warm-card); border-color: var(--border-accent);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="color: var(--rose-gold);">⚜️</span>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-espresso);">Grounded Salon Policy</h4>
+          </div>
+          <p style="font-size: 0.84rem; color: var(--text-charcoal); line-height: 1.6;">
+            Appointments cancelled at least 24 hours in advance receive a 100% full refund with zero penalty fees. A 15-minute grace period applies to all appointments. Grounded in the salon pgvector knowledge base.
+          </p>
+        </div>
+      </div>
+
+      <!-- Right Column: Interactive Slot Selection & Booking -->
+      <div class="salon-card" style="padding: 32px; border-radius: 24px;">
+        <div style="margin-bottom: 24px;">
+          <span class="badge badge-rose" style="margin-bottom: 8px;">STEP 2 • APPOINTMENT CALENDAR</span>
+          <h2 style="font-size: 1.65rem; font-weight: 700; color: var(--text-espresso);">Select Date & Time</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted);">Selected Service: <strong id="selected-service-title" style="color: var(--rose-gold);">Signature Haircut & Botanical Blowout ($95)</strong></p>
+        </div>
+
+        <!-- Date Selection -->
+        <div style="margin-bottom: 24px;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text-espresso); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.05em;">Available Days</label>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <div class="slot-pill active" onclick="selectDate(this, 'Tomorrow, Sep 15')">
+              <div style="font-size: 0.72rem; color: var(--text-muted);">TUE</div>
+              <strong>Sep 15</strong>
+            </div>
+            <div class="slot-pill" onclick="selectDate(this, 'Wednesday, Sep 16')">
+              <div style="font-size: 0.72rem; color: var(--text-muted);">WED</div>
+              <strong>Sep 16</strong>
+            </div>
+            <div class="slot-pill" onclick="selectDate(this, 'Thursday, Sep 17')">
+              <div style="font-size: 0.72rem; color: var(--text-muted);">THU</div>
+              <strong>Sep 17</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Time Slots Selection -->
+        <div style="margin-bottom: 26px;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: var(--text-espresso); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.05em;">Available Slots (Conflict-Free)</label>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <div class="slot-pill active" onclick="selectTime(this, '10:00 AM')">10:00 AM</div>
+            <div class="slot-pill" onclick="selectTime(this, '11:30 AM')">11:30 AM</div>
+            <div class="slot-pill" onclick="selectTime(this, '01:00 PM')">01:00 PM</div>
+            <div class="slot-pill" onclick="selectTime(this, '02:30 PM')">02:30 PM</div>
+            <div class="slot-pill" onclick="selectTime(this, '04:00 PM')">04:00 PM</div>
+            <div class="slot-pill" onclick="selectTime(this, '05:30 PM')">05:30 PM</div>
+          </div>
+        </div>
+
+        <!-- Customer Inputs -->
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 26px;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-charcoal); margin-bottom: 6px;">Your Full Name</label>
+            <input type="text" id="cust-name" value="Eleanor Vance" style="width: 100%; background: var(--bg-warm-card); border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px 16px; color: var(--text-espresso); font-size: 0.9rem; outline: none;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-charcoal); margin-bottom: 6px;">Phone / SMS Confirmation</label>
+            <input type="text" id="cust-phone" value="+1 (555) 392-8411" style="width: 100%; background: var(--bg-warm-card); border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px 16px; color: var(--text-espresso); font-size: 0.9rem; outline: none;">
+          </div>
+        </div>
+
+        <button onclick="confirmBooking()" class="btn btn-rosegold" style="width: 100%; padding: 15px; font-size: 1rem;">
+          <span>Reserve Appointment & Generate Ticket →</span>
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Reservation Confirmation Modal -->
+  <div id="booking-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--rose-gold-light); border: 2px solid var(--rose-gold); color: var(--rose-gold); font-size: 1.8rem; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+          ✓
+        </div>
+        <h3 style="font-size: 1.7rem; font-weight: 700; color: var(--text-espresso);">Appointment Reserved!</h3>
+        <p style="font-size: 0.88rem; color: var(--text-charcoal);">Your slot has been locked with zero double-booking conflict.</p>
+      </div>
+
+      <div style="background: var(--bg-warm-card); border: 1px solid var(--border-accent); border-radius: 16px; padding: 18px; margin-bottom: 24px; font-size: 0.88rem; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Reference ID:</span>
+          <strong id="modal-id" style="color: var(--rose-gold); font-family: 'JetBrains Mono', monospace;">BK-938210</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Service:</span>
+          <strong id="modal-service" style="color: var(--text-espresso);">Signature Haircut & Style</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Guest:</span>
+          <strong id="modal-client" style="color: var(--text-espresso);">Eleanor Vance</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Date & Time:</span>
+          <strong id="modal-time" style="color: var(--rose-gold);">Tomorrow, Sep 15 @ 10:00 AM</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--text-muted);">Cancellation Window:</span>
+          <span style="color: #059669; font-weight: 600;">Free until 24h prior</span>
+        </div>
+      </div>
+
+      <button onclick="closeBookingModal()" class="btn btn-rosegold" style="width: 100%;">
+        Done & Close
+      </button>
+    </div>
+  </div>
+
+  <!-- AI Concierge Floating Button & Drawer -->
+  <div class="chat-bubble">
+    <button onclick="toggleChat()" style="width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #B76E79, #9E5661); border: 2px solid #FFFFFF; color: #FFFFFF; font-size: 1.4rem; cursor: pointer; box-shadow: 0 8px 25px rgba(183, 110, 121, 0.35); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+      💬
+    </button>
+  </div>
+
+  <div id="chat-widget" class="chat-box">
+    <div style="padding: 16px 20px; background: var(--bg-warm-card); border-bottom: 1px solid var(--border-soft); display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h4 style="font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; color: var(--text-espresso);">AI Salon Concierge</h4>
+        <div id="salon-chat-status" style="font-size: 0.72rem; color: var(--rose-gold); display: flex; align-items: center; margin-top: 2px;">
+          Connecting to Cloud Turbo AI...
+        </div>
+      </div>
+      <button onclick="toggleChat()" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem;">
+      <div style="background: var(--bg-warm-card); padding: 12px 16px; border-radius: 14px; max-width: 88%; align-self: flex-start; line-height: 1.5; color: var(--text-espresso); border: 1px solid var(--border-soft);">
+        Bonjour! Welcome to <strong>Glamour Haven</strong>, part of the PRISM Core suite created by solo developer <strong>Niten Varshan</strong>. Niten engineered the entire backend booking engine from scratch with AI-crafted Parisian styling. Ask me about booking, balayage maintenance, scalp therapies, or our 24h cancellation terms!
+      </div>
+    </div>
+
+    <!-- Presets -->
+    <div style="padding: 8px 14px; background: var(--bg-warm-card); display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid var(--border-soft);">
+      <button onclick="askPreset('What is your cancellation policy?')" style="background: #FFFFFF; border: 1px solid var(--border-soft); color: var(--rose-gold); font-size: 0.72rem; padding: 5px 10px; border-radius: 8px; cursor: pointer;">Cancellation Policy?</button>
+      <button onclick="askPreset('How do I care for my Keratin treatment?')" style="background: #FFFFFF; border: 1px solid var(--border-soft); color: var(--rose-gold); font-size: 0.72rem; padding: 5px 10px; border-radius: 8px; cursor: pointer;">Keratin Aftercare?</button>
+    </div>
+
+    <div style="padding: 12px 16px; background: #FFFFFF; border-top: 1px solid var(--border-soft); display: flex; gap: 8px;">
+      <input type="text" id="chat-input" placeholder="Ask concierge a question..." style="flex: 1; background: var(--bg-warm-card); border: 1px solid var(--border-soft); border-radius: 10px; padding: 9px 14px; color: var(--text-espresso); font-size: 0.82rem; outline: none;" onkeydown="if(event.key==='Enter') sendChat()">
+      <button onclick="sendChat()" style="background: var(--rose-gold); border: none; color: #FFFFFF; border-radius: 10px; padding: 0 16px; font-weight: 600; cursor: pointer;">Send</button>
+    </div>
+  </div>
+
+  <script>
+    let activeService = { id: 'srv-1', title: 'Signature Haircut & Botanical Blowout', price: 95, duration: 60 };
+    let selectedDateStr = 'Tomorrow, Sep 15';
+    let selectedTimeStr = '10:00 AM';
+
+    function selectService(id, title, price, duration) {
+      activeService = { id, title, price, duration };
+      ['card-srv-1', 'card-srv-2', 'card-srv-3', 'card-srv-4'].forEach(cardId => {
+        document.getElementById(cardId).style.borderColor = 'var(--border-soft)';
+        document.getElementById(cardId).style.boxShadow = 'none';
+      });
+      const selectedCard = document.getElementById('card-' + id);
+      selectedCard.style.borderColor = 'var(--rose-gold)';
+      selectedCard.style.boxShadow = '0 4px 20px rgba(183, 110, 121, 0.18)';
+      document.getElementById('selected-service-title').innerText = `${title} ($${price})`;
+    }
+
+    function selectDate(el, str) {
+      document.querySelectorAll('.slot-pill').forEach(p => {
+        if (p.parentElement.style.gridTemplateColumns.includes('repeat(3, 1fr)') && p.innerHTML.includes('Sep')) {
+          p.classList.remove('active');
+        }
+      });
+      el.classList.add('active');
+      selectedDateStr = str;
+    }
+
+    function selectTime(el, str) {
+      el.parentElement.querySelectorAll('.slot-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      selectedTimeStr = str;
+    }
+
+    function confirmBooking() {
+      const name = document.getElementById('cust-name').value || 'Eleanor Vance';
+      const bookingId = 'BK-' + Math.floor(100000 + Math.random() * 900000);
+      document.getElementById('modal-service').innerText = `${activeService.title} ($${activeService.price})`;
+      document.getElementById('modal-client').innerText = name;
+      document.getElementById('modal-time').innerText = `${selectedDateStr} @ ${selectedTimeStr}`;
+      document.getElementById('modal-id').innerText = bookingId;
+      document.getElementById('booking-modal').classList.add('active');
+    }
+
+    function closeBookingModal() {
+      document.getElementById('booking-modal').classList.remove('active');
+    }
+
+    function toggleChat() {
+      document.getElementById('chat-widget').classList.toggle('active');
+    }
+
+    // Real Conversational LLM Engine Initializer
+    const salonChat = createAgyChatEngine({
+      appId: 'salon',
+      containerId: 'chat-messages',
+      inputId: 'chat-input',
+      statusBadgeId: 'salon-chat-status',
+      systemPrompt: `You are the AI Concierge for Glamour Haven Salon & Spa, a luxury Parisian-inspired hair sanctuary.
+You speak warmly, elegantly, and with authoritative expertise in:
+- Signature Haircut & Botanical Blowout ($95, 60 mins)
+- Luxe Balayage & French Gloss ($260, 180 mins - hand-painted dimensional lightening, bond repair, luminous toner)
+- Japanese Head Spa Scalp Therapy ($140, 75 mins - 200x microscopic scalp analysis, carbonated waterfall hydrotherapy, Shiatsu massage)
+- Brazilian Bio-Keratin Infusion ($310, 150 mins - formaldehyde-free cuticle restoration, lasts up to 5 months)
+- Cancellation Policy: 100% full refund for cancellations at least 24 hours in advance with zero penalty fees. 15-minute grace period applies to all bookings.
+- Aftercare: Keratin clients must avoid washing or clips for 72 hours, and use only sulfate-free shampoos.
+Keep responses concise, luxurious, helpful, and natural.`,
+      fallbackHandler: (text) => {
+        const low = text.toLowerCase();
+        if (low.includes('cancel') || low.includes('refund')) {
+          return "<strong>Cancellation Policy:</strong> Appointments cancelled at least 24 hours in advance receive a 100% full refund with zero penalty fees. A 15-minute grace period applies to all bookings.";
+        } else if (low.includes('keratin') || low.includes('aftercare') || low.includes('care')) {
+          return "<strong>Bio-Keratin Aftercare:</strong> Please refrain from washing your hair or using hair ties/clips for 72 hours post-treatment. Always wash with sulfate-free shampoo to maintain that mirror glass shine for up to 5 months!";
+        } else if (low.includes('balayage') || low.includes('color') || low.includes('highlight')) {
+          return "Our <strong>Luxe Balayage ($260)</strong> includes custom hand-painted dimensional lightening, Olaplex bond repair infusion, and a French gloss toner for seamless sun-kissed blending.";
+        } else if (low.includes('head spa') || low.includes('scalp')) {
+          return "The <strong>Japanese Head Spa ($140)</strong> features a 200x microscopic trichology analysis, carbonated waterfall hydrotherapy, and acupressure Shiatsu massage to reset follicle health.";
+        } else {
+          return "Bonjour! I am your personal salon concierge. Our master stylists are available Tuesday through Thursday. Would you like a recommendation on balayage maintenance, scalp detox, or keratin restoration?";
+        }
+      }
+    });
+
+    function askPreset(q) {
+      document.getElementById('chat-input').value = q;
+      sendChat();
+    }
+
+    function sendChat() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      salonChat.sendMessage(text, '#B76E79');
+    }
+  </script>
+
+</body>
+</html>

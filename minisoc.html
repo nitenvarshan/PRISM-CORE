@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<!-- Sentinel Mini SOC — Copyright (c) 2026 Niten Varshan. Licensed under the MIT License. -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinel Mini SOC — AI Log Monitoring & GRC for SMBs</title>
+  
+  <!-- Authoritative SOC Interface Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Real Conversational LLM Engine (Cloud Turbo Llama 3.1) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script src="js/chat-engine.js"></script>
+
+  <style>
+    :root {
+      --bg-midnight: #0F172A;
+      --bg-card: #1E293B;
+      --bg-card-hover: #26354A;
+      --border-slate: #334155;
+      --border-subtle: rgba(51, 65, 85, 0.7);
+      --border-glow: #06B6D4;
+      --primary: #06B6D4;
+      --primary-hover: #0891B2;
+      --primary-glow: rgba(6, 182, 212, 0.4);
+      --accent: #38BDF8;
+      
+      /* Semantic Alert Colors */
+      --alert-crimson: #EF4444;
+      --alert-amber: #F59E0B;
+      --alert-emerald: #10B981;
+      
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-midnight);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 90% 80%, rgba(30, 41, 59, 0.4) 0%, transparent 50%),
+        linear-gradient(to right, rgba(51, 65, 85, 0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(51, 65, 85, 0.15) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+      background-attachment: fixed;
+    }
+
+    h1, h2, h3, h4, .soc-header {
+      font-family: 'Inter', sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    .glass-panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(28px) saturate(210%);
+      -webkit-backdrop-filter: blur(28px) saturate(210%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      box-shadow: 
+        inset 1px 1px 1px 0 rgba(255, 255, 255, 0.14),
+        inset 0 0 25px rgba(6, 182, 212, 0.04),
+        0 24px 50px -12px rgba(0, 0, 0, 0.88);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-panel:hover {
+      border-color: var(--border-glow);
+      box-shadow: 
+        inset 1px 1px 2px 0 rgba(255, 255, 255, 0.25),
+        0 0 35px -5px var(--primary-glow),
+        0 25px 60px -15px rgba(0, 0, 0, 0.95);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.88rem;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: none;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 20px -2px var(--primary-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -1px var(--primary-glow), inset 0 1px 0 0 rgba(255, 255, 255, 0.35);
+      filter: brightness(1.12);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      color: #ffffff;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 580px;
+      background: #0b111e;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(6, 182, 212, 0.25);
+      transform: scale(0.95);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: scale(1);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.3);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(6, 182, 212, 0.4);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 10px;
+      border-radius: 9999px;
+    }
+
+    .badge-critical {
+      background: rgba(239, 68, 68, 0.18);
+      color: #EF4444;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .badge-high, .badge-warning {
+      background: rgba(245, 158, 11, 0.18);
+      color: #F59E0B;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .badge-secure, .badge-emerald {
+      background: rgba(16, 185, 129, 0.18);
+      color: #10B981;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .badge-cyan {
+      background: rgba(6, 182, 212, 0.15);
+      color: #06B6D4;
+      border: 1px solid rgba(6, 182, 212, 0.35);
+    }
+
+    .status-dot-pulse {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 10px #10B981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Glass Navbar -->
+  <header style="position: sticky; top: 0; z-index: 50; width: 100%; backdrop-filter: blur(20px); background: rgba(7, 9, 14, 0.8); border-bottom: 1px solid rgba(6, 182, 212, 0.2); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);">
+    <div style="max-w: 1320px; max-width: 1320px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between;">
+      
+      <!-- Brand & Project Switcher -->
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <a href="index.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #94a3b8; font-size: 0.78rem; font-weight: 600; padding: 7px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;">
+          ← Portfolio Hub
+        </a>
+
+        <div style="height: 18px; width: 1px; background: rgba(255,255,255,0.15);"></div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(37, 99, 235, 0.3)); border: 1px solid rgba(6, 182, 212, 0.5); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(6, 182, 212, 0.35);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.05rem; font-weight: 800; letter-spacing: -0.02em;">Sentinel <span style="color: #06b6d4;">Mini SOC</span></span>
+              <span class="badge badge-cyan">PROJECT 4 • B2B CYBERSECURITY</span>
+            </div>
+            <p style="font-size: 0.74rem; color: #94a3b8; font-weight: 500;">AI Threat Triage & GRC-Lite Compliance for SMBs</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Project Jump Links -->
+      <nav style="display: flex; gap: 8px; align-items: center;">
+        <a href="salon.html" style="font-size: 0.78rem; font-weight: 600; color: #94a3b8; padding: 6px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); text-decoration: none;">Salon Demo</a>
+        <a href="store.html" style="font-size: 0.78rem; font-weight: 600; color: #94a3b8; padding: 6px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); text-decoration: none;">Store Demo</a>
+        <a href="ops.html" style="font-size: 0.78rem; font-weight: 600; color: #94a3b8; padding: 6px 12px; border-radius: 8px; background: rgba(255,255,255,0.04); text-decoration: none;">SaaS Ops</a>
+        <a href="minisoc.html" style="font-size: 0.78rem; font-weight: 700; color: #67e8f9; padding: 6px 12px; border-radius: 8px; background: rgba(6, 182, 212, 0.2); border: 1px solid rgba(6, 182, 212, 0.4); text-decoration: none;">Mini SOC 🛡️</a>
+      </nav>
+
+      <!-- Engine Pill & Live Status -->
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 9999px; font-size: 0.78rem;">
+          <span class="status-dot-pulse"></span>
+          <span class="font-mono" style="color: #10b981; font-weight: 600;">Stream Active</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 9999px; font-size: 0.78rem; color: #67e8f9;">
+          <span class="font-mono">Autonomous SOC Engine</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main style="max-width: 1320px; margin: 0 auto; padding: 36px 24px 80px;">
+
+    <!-- Hero Value Pitch -->
+    <section class="glass-panel" style="padding: 36px 40px; margin-bottom: 32px; border-radius: 24px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(6, 182, 212, 0.08) 100%);">
+      <div style="display: flex; flex-direction: column; lg:flex-row; gap: 24px; justify-content: space-between; align-items: flex-start;">
+        <div style="max-width: 820px;">
+          <div class="badge badge-cyan" style="margin-bottom: 14px;">
+            AFFORDABLE ENTERPRISE SIEM ALTERNATIVE FOR SMBS
+          </div>
+          <h1 style="font-size: 2.3rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 14px;">
+            Autonomous AI-Powered <span style="background: linear-gradient(135deg, #06b6d4, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Security Operations Center</span>
+          </h1>
+          <p style="font-size: 0.95rem; color: #cbd5e1; line-height: 1.65;">
+            Enterprise SIEM tools (Splunk, Datadog) start at thousands of dollars per month and require dedicated SOC analysts. Sentinel Mini SOC delivers 24/7 autonomous log filtering, MITRE ATT&CK triage, and plain-English SOC 2 posture reporting for small teams priced out of enterprise tools.
+          </p>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px 24px; min-width: 280px;" class="font-mono">
+          <div style="font-size: 0.74rem; color: #06b6d4; font-weight: 700; text-transform: uppercase; margin-bottom: 10px;">3-Agent Pipeline</div>
+          <div style="font-size: 0.78rem; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between;"><span>1. Log Analysis:</span> <span style="color: #38bdf8;">Noise Filter (-98%)</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>2. Threat Hunter:</span> <span style="color: #fbbf24;">MITRE Correlator</span></div>
+            <div style="display: flex; justify-content: space-between;"><span>3. GRC-Lite:</span> <span style="color: #34d399;">SOC 2 Auditor</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Simulation Switcher & Paste Logs Button -->
+    <div class="glass-panel" style="padding: 20px 28px; border-radius: 18px; margin-bottom: 28px;">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="status-dot-pulse" style="background: #06b6d4; box-shadow: 0 0 10px #06b6d4;"></span>
+            <span class="font-mono" style="font-size: 0.76rem; font-weight: 700; color: #06b6d4; text-transform: uppercase;">Interactive Threat Simulation Engine</span>
+          </div>
+          <p style="font-size: 0.82rem; color: #94a3b8; margin-top: 2px;">Click a scenario to trigger live multi-agent log triage or paste your own custom logs:</p>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <button id="btn-cs" onclick="switchScenario('credential_stuffing')" class="btn btn-primary" style="font-size: 0.82rem; padding: 8px 16px;">
+            ▶ Scenario 1: Credential Stuffing & ATO <span class="badge badge-critical" style="margin-left: 4px;">CRITICAL</span>
+          </button>
+          <button id="btn-wr" onclick="switchScenario('web_recon')" class="btn btn-secondary" style="font-size: 0.82rem; padding: 8px 16px;">
+            ▶ Scenario 2: Web Recon Probing <span class="badge badge-high" style="margin-left: 4px;">HIGH</span>
+          </button>
+          <button id="btn-iam" onclick="switchScenario('cloud_iam')" class="btn btn-secondary" style="font-size: 0.82rem; padding: 8px 16px;">
+            ▶ Scenario 3: CloudTrail IAM Escalation <span class="badge badge-critical" style="margin-left: 4px;">CRITICAL</span>
+          </button>
+          <button onclick="openUploadModal()" class="btn btn-secondary" style="font-size: 0.82rem; padding: 8px 16px; border-color: rgba(6, 182, 212, 0.4); color: #67e8f9;">
+            📁 Paste / Upload Logs
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4-HUD Real-Time Metrics Strip -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 32px;">
+      
+      <!-- Metric 1: Risk Gauge -->
+      <div class="glass-panel" style="padding: 24px; border-radius: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="font-mono" style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Composite Risk Score</span>
+          <span id="metric-status-badge" class="badge badge-critical">CRITICAL</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 12px;">
+          <span id="metric-risk-score" class="font-mono" style="font-size: 2.8rem; font-weight: 800; color: #EF4444;">91</span>
+          <span class="font-mono" style="color: #64748b; font-size: 1.1rem;">/ 100</span>
+        </div>
+        <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 9999px; margin-top: 12px; overflow: hidden;">
+          <div id="metric-risk-bar" style="height: 100%; width: 91%; background: linear-gradient(90deg, #F59E0B, #EF4444); transition: all 0.5s ease;"></div>
+        </div>
+        <p style="font-size: 0.76rem; color: #94a3b8; margin-top: 10px;">Bayesian impact based on credential validity & blast radius.</p>
+      </div>
+
+      <!-- Metric 2: Noise Reduction -->
+      <div class="glass-panel" style="padding: 24px; border-radius: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="font-mono" style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Noise Filter Ratio</span>
+          <span class="badge badge-cyan">AGENT 1</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 12px;">
+          <span id="metric-noise" class="font-mono" style="font-size: 2.8rem; font-weight: 800; color: #ffffff;">98.4%</span>
+          <span style="color: #10B981; font-size: 0.88rem; font-weight: 600;">dropped</span>
+        </div>
+        <p style="font-size: 0.76rem; color: #94a3b8; margin-top: 18px;">Routine 200 OKs filtered out before LLM evaluation, saving 95%+ in token cost.</p>
+      </div>
+
+      <!-- Metric 3: Active Incidents -->
+      <div class="glass-panel" style="padding: 24px; border-radius: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="font-mono" style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Active Incidents</span>
+          <span class="badge badge-critical">ACTION REQ</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 12px;">
+          <span id="metric-incidents" class="font-mono" style="font-size: 2.8rem; font-weight: 800; color: #ffffff;">1</span>
+          <span style="color: #EF4444; font-size: 0.88rem; font-weight: 600;">isolated threat</span>
+        </div>
+        <p style="font-size: 0.76rem; color: #94a3b8; margin-top: 18px;">Correlated against MITRE ATT&CK enterprise matrix with blast radius.</p>
+      </div>
+
+      <!-- Metric 4: SOC 2 Readiness -->
+      <div class="glass-panel" style="padding: 24px; border-radius: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="font-mono" style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">SOC 2 Posture</span>
+          <span id="metric-soc-status" class="badge badge-critical">AT RISK</span>
+        </div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 12px;">
+          <span id="metric-readiness" class="font-mono" style="font-size: 2.8rem; font-weight: 800; color: #ffffff;">52%</span>
+          <span style="color: #94a3b8; font-size: 0.88rem; font-weight: 500;">audit readiness</span>
+        </div>
+        <p style="font-size: 0.76rem; color: #94a3b8; margin-top: 18px;">Evaluated against Trust Services Criteria (CC6.1, CC6.6, CC6.8).</p>
+      </div>
+    </div>
+
+    <!-- Main Two-Column Layout: Terminal (Left) + Incident Triage & Playbooks (Right) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 28px; margin-bottom: 36px;">
+      
+      <!-- Left Column: Live Terminal Stream -->
+      <div class="glass-panel" style="border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; height: 580px; background: rgba(5, 8, 15, 0.9);">
+        
+        <!-- Terminal Header -->
+        <div style="padding: 14px 20px; background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="display: flex; gap: 6px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #F59E0B; display: inline-block;"></span>
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
+            </div>
+            <span class="font-mono" style="font-size: 0.82rem; font-weight: 700; color: #ffffff;">Live Ingestion Terminal</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button onclick="toggleAnomaliesOnly()" id="btn-toggle-anomalies" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; font-size: 0.74rem; font-family: monospace; padding: 4px 10px; border-radius: 8px; cursor: pointer;">
+              Anomalies Only
+            </button>
+            <button onclick="copyTerminalLogs()" id="btn-copy-terminal" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #cbd5e1; font-size: 0.74rem; font-family: monospace; padding: 4px 10px; border-radius: 8px; cursor: pointer;">
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- Terminal Body -->
+        <div id="terminal-stream" class="font-mono" style="padding: 16px; overflow-y: auto; flex: 1; font-size: 0.75rem; display: flex; flex-direction: column; gap: 8px; user-select: text;">
+          <!-- Injected dynamically via JS -->
+        </div>
+
+        <!-- Terminal Footer -->
+        <div style="padding: 10px 18px; background: rgba(15, 23, 42, 0.9); border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.72rem; color: #94a3b8; display: flex; justify-content: space-between;" class="font-mono">
+          <span style="display: flex; align-items: center; gap: 6px;">
+            <span class="status-dot-pulse" style="width: 5px; height: 5px;"></span> Ingesting edge syslog buffer
+          </span>
+          <span id="terminal-event-count">16 events active</span>
+        </div>
+      </div>
+
+      <!-- Right Column: Incident Investigation & Remediation Playbooks -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        
+        <!-- Incident Card -->
+        <div class="glass-panel" style="padding: 28px; border-radius: 20px; border-color: rgba(239, 68, 68, 0.35);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span id="incident-sev-badge" class="badge badge-critical">CRITICAL</span>
+                <span id="incident-mitre" class="badge badge-cyan font-mono">T1110.004 Credential Stuffing</span>
+                <span class="font-mono" style="font-size: 0.74rem; color: #94a3b8;">Confidence: 98%</span>
+              </div>
+              <h3 id="incident-title" style="font-size: 1.25rem; font-weight: 800; color: #ffffff;">
+                Account Takeover (ATO) & Exfiltration via Tor Exit Node
+              </h3>
+            </div>
+          </div>
+
+          <!-- Executive Founder Briefing -->
+          <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.25); border-radius: 12px; padding: 16px; margin: 16px 0;">
+            <div class="font-mono" style="font-size: 0.7rem; font-weight: 700; color: #06b6d4; text-transform: uppercase; margin-bottom: 4px;">Executive Founder Briefing</div>
+            <p id="incident-exec" style="font-size: 0.85rem; color: #f1f5f9; line-height: 1.6;">
+              An attacker automated 9 authentication attempts against privileged corporate accounts via Tor nodes. The attacker succeeded on admin@acme-saas.com and immediately triggered a customer PII export.
+            </p>
+          </div>
+
+          <!-- Technical Analysis & Blast Radius -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px;">
+              <span class="font-mono" style="font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Forensic Breakdown</span>
+              <p id="incident-tech" class="font-mono" style="font-size: 0.74rem; color: #cbd5e1; line-height: 1.5;">
+                Source IP 185.220.101.5 rotated User-Agents, generated 401 responses, then hit valid credentials. MFA was not strictly enforced for role "super_admin".
+              </p>
+            </div>
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px;">
+              <span class="font-mono" style="font-size: 0.7rem; color: #EF4444; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Blast Radius</span>
+              <p id="incident-blast" class="font-mono" style="font-size: 0.74rem; color: #cbd5e1; line-height: 1.5;">
+                Super Admin credentials compromised; 450 customer PII records accessed via /api/v1/admin/users/export.
+              </p>
+            </div>
+          </div>
+
+          <!-- Automated Playbook Actions -->
+          <div style="background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span class="font-mono" style="font-size: 0.76rem; font-weight: 700; color: #10B981; text-transform: uppercase;">
+                Automated 1-Click Remediation Playbooks
+              </span>
+              <span class="font-mono" style="font-size: 0.7rem; color: #94a3b8;">Edge mitigation ready</span>
+            </div>
+
+            <!-- Generated Config Patch -->
+            <div style="margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; margin-bottom: 4px;" class="font-mono">
+                <span>Generated WAF Policy Expression:</span>
+                <span id="btn-copy-patch" onclick="copyPatchSnippet()" style="color: #38bdf8; cursor: pointer;">Copy Snippet</span>
+              </div>
+              <pre id="incident-patch" class="font-mono" style="background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px; font-size: 0.73rem; color: #67e8f9; overflow-x: auto;">
+(http.request.uri.path contains "/api/v1/auth" and ip.geoip.asnum in {9009 200052}) -> BLOCK
+(http.request.uri.path contains "/api/v1/admin" and not ip.geoip.country in {"US"}) -> CHALLENGE</pre>
+            </div>
+
+            <!-- Execution Action Buttons -->
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end;">
+              <button onclick="triggerRemediation('block_ip')" class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 14px;">
+                Quarantine Source IP
+              </button>
+              <button onclick="triggerRemediation('revoke_session')" class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 14px;">
+                Revoke Admin Session
+              </button>
+              <button onclick="triggerRemediation('apply_waf')" class="btn btn-primary" style="font-size: 0.78rem; padding: 8px 16px;">
+                ⚡ Deploy Edge Protection Policy
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SOC 2 Compliance & 1-Click Board Memo Export -->
+    <section class="glass-panel" style="padding: 32px 36px; border-radius: 20px; margin-bottom: 40px;">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 24px;">
+        <div>
+          <div class="badge badge-cyan" style="margin-bottom: 8px;">SOC 2 TYPE II & CIS CONTROLS AUDIT</div>
+          <h2 style="font-size: 1.45rem; font-weight: 800;">Automated Compliance Readiness & Investor Briefing</h2>
+          <p style="font-size: 0.86rem; color: #94a3b8; margin-top: 4px;">
+            Answers the dreaded enterprise sales question: <em style="color: #f1f5f9;">"What is your security posture?"</em>
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button onclick="copyBoardMemo()" id="btn-copy-memo" class="btn btn-secondary">
+            📋 Copy Board Memo
+          </button>
+          <button onclick="downloadBoardMemo()" class="btn btn-primary">
+            ⬇ Download Board Memo (.MD)
+          </button>
+        </div>
+      </div>
+
+      <!-- Findings List -->
+      <div id="compliance-findings" style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- Injected dynamically via JS -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Upload / Paste Logs Modal -->
+  <div id="upload-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(6, 182, 212, 0.2); border: 1px solid rgba(6, 182, 212, 0.4); display: flex; align-items: center; justify-content: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div>
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: #ffffff;">Custom Log Ingestion</h3>
+            <p style="font-size: 0.78rem; color: #94a3b8;">Paste raw logs (Syslog, Nginx, JSON) for instant autonomous triage</p>
+          </div>
+        </div>
+        <button onclick="closeUploadModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px;">
+        <span>Log Stream Input:</span>
+        <span onclick="insertSampleLogs()" style="color: #06b6d4; cursor: pointer; font-weight: 600;">+ Insert Sample Web Attack</span>
+      </div>
+
+      <textarea id="custom-logs-input" placeholder="Paste server logs or JSON lines here..." style="width: 100%; height: 200px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #67e8f9; resize: none; margin-bottom: 18px; outline: none;"></textarea>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button onclick="closeUploadModal()" class="btn btn-secondary">Cancel</button>
+        <button onclick="executeCustomLogTriage()" class="btn btn-primary">⚡ Execute Autonomous Triage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remediation Receipt Modal -->
+  <div id="remediation-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div style="text-align: center; padding: 10px 0 20px;">
+        <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h3 id="receipt-headline" style="font-size: 1.25rem; font-weight: 800; color: #ffffff;">Remediation Executed</h3>
+        <p id="receipt-message" style="font-size: 0.85rem; color: #10B981; margin-top: 6px;"></p>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; margin-bottom: 20px; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem;" class="font-mono">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #94a3b8;">
+          <span>Timestamp:</span>
+          <span id="receipt-time" style="color: #ffffff;"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #94a3b8;">
+          <span>Rule Reference ID:</span>
+          <span id="receipt-rule-id" style="color: #67e8f9;"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; color: #94a3b8;">
+          <span>Edge Sync Status:</span>
+          <span style="color: #10B981;">14 Global PoPs Synchronized</span>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button onclick="closeRemediationModal()" class="btn btn-primary" style="width: 100%;">
+          Return to Command Dashboard
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client-Side Simulation & Reactivity Script -->
+  <script>
+    const SCENARIOS = {
+      credential_stuffing: {
+        id: 'credential_stuffing',
+        risk_score: 91,
+        risk_status: 'CRITICAL',
+        noise_reduction: '98.4%',
+        incidents_count: 1,
+        soc_score: '52%',
+        soc_status: 'AT RISK',
+        title: 'Account Takeover (ATO) & Exfiltration via Tor Exit Node',
+        mitre: 'T1110.004 Credential Stuffing',
+        confidence: '98%',
+        exec: 'An attacker automated 9 authentication attempts against privileged corporate accounts via Tor nodes. The attacker succeeded on admin@acme-saas.com and immediately triggered a customer PII export.',
+        tech: 'Source IP 185.220.101.5 (Frankfurt Tor Exit) rotated User-Agents, generated 401 responses, then hit valid credentials. MFA was not strictly enforced on super_admin role.',
+        blast: 'Super Admin credentials compromised; 450 customer PII records accessed via /api/v1/admin/users/export.',
+        patch: `(http.request.uri.path contains "/api/v1/auth" and ip.geoip.asnum in {9009 200052}) -> BLOCK
+(http.request.uri.path contains "/api/v1/admin" and not ip.geoip.country in {"US"}) -> CHALLENGE`,
+        logs: [
+          { time: '14:02:01', source: 'auth_gateway', ip: '185.220.101.5', ep: '/api/v1/auth/login', status: 401, target: 'sarah.miller@acme-saas.com', anomaly: false, payload: 'invalid_credentials (Tor Node)' },
+          { time: '14:02:04', source: 'auth_gateway', ip: '185.220.101.5', ep: '/api/v1/auth/login', status: 401, target: 'david.chen@acme-saas.com', anomaly: false, payload: 'invalid_credentials (Tor Node)' },
+          { time: '14:02:08', source: 'auth_gateway', ip: '198.98.56.12', ep: '/api/v1/auth/login', status: 401, target: 'support@acme-saas.com', anomaly: false, payload: 'invalid_credentials (Tor Node)' },
+          { time: '14:02:12', source: 'auth_gateway', ip: '176.10.99.200', ep: '/api/v1/auth/login', status: 401, target: 'ceo@acme-saas.com', anomaly: false, payload: 'invalid_credentials (Tor Node)' },
+          { time: '14:02:18', source: 'auth_gateway', ip: '103.251.167.21', ep: '/api/v1/auth/login', status: 401, target: 'admin@acme-saas.com', anomaly: false, payload: 'invalid_credentials' },
+          { time: '14:02:22', source: 'auth_gateway', ip: '185.220.101.5', ep: '/api/v1/auth/login', status: 200, target: 'admin@acme-saas.com', anomaly: true, payload: 'session_token_issued (Frankfurt Tor Exit, prev Austin TX)' },
+          { time: '14:02:28', source: 'api_server', ip: '185.220.101.5', ep: '/api/v1/admin/users/export', status: 200, target: 'admin@acme-saas.com', anomaly: true, payload: 'customer_pii_download (450 records)' },
+          { time: '14:02:30', source: 'nginx_edge', ip: '66.249.66.1', ep: '/robots.txt', status: 200, target: '', anomaly: false, payload: 'Googlebot/2.1' },
+          { time: '14:02:32', source: 'api_server', ip: '10.0.1.45', ep: '/healthz', status: 200, target: '', anomaly: false, payload: 'uptime: 14d 6h' },
+          { time: '14:02:35', source: 'auth_gateway', ip: '73.189.44.20', ep: '/api/v1/auth/refresh', status: 200, target: 'julie@legit.com', anomaly: false, payload: 'token_refreshed' }
+        ],
+        findings: [
+          { control: 'SOC 2 CC6.1 (Logical Access & MFA)', title: 'Unenforced MFA on Super Administrator Account', impact: 'Auditors will issue a qualified audit finding if administrative portals permit single-factor access.', remediation: 'Enforce WebAuthn (FIDO2) or TOTP on all accounts with administrative permissions.' },
+          { control: 'SOC 2 CC6.6 (Rate Limiting)', title: 'Missing Adaptive Brute-Force Rate Limiting', impact: 'Attackers executed multiple credential sprays without triggering automated IP lockout.', remediation: 'Deploy token-bucket rate limiting capped at 5 failed attempts per IP per 5-minute window.' }
+        ]
+      },
+
+      web_recon: {
+        id: 'web_recon',
+        risk_score: 64,
+        risk_status: 'ELEVATED',
+        noise_reduction: '97.8%',
+        incidents_count: 1,
+        soc_score: '68%',
+        soc_status: 'MINOR GAPS',
+        title: 'Automated Attack Surface Reconnaissance & OpenAPI Exposure',
+        mitre: 'T1595.002 Vulnerability Scanning',
+        confidence: '94%',
+        exec: 'An automated vulnerability scanner probed 8 critical configuration endpoints and successfully harvested public OpenAPI/Swagger schemas revealing internal route architecture.',
+        tech: 'IP 45.154.255.89 cycled known developer misconfigurations. While /.env and /.git returned 404, /swagger-ui.html and /v2/api-docs were publicly exposed without authentication.',
+        blast: 'Full API attack surface and schema mapping downloaded by untrusted foreign IP.',
+        patch: `location ~* ^/(\\.env|\\.git|actuator|v2/api-docs|swagger-ui) {
+    deny all;
+    return 404;
+}`,
+        logs: [
+          { time: '14:10:01', source: 'nginx_edge', ip: '45.154.255.89', ep: '/.env', status: 404, target: '', anomaly: true, payload: 'Nuclei Scanner (GET /.env)' },
+          { time: '14:10:03', source: 'nginx_edge', ip: '45.154.255.89', ep: '/.git/config', status: 404, target: '', anomaly: true, payload: 'Nuclei Scanner (GET /.git/config)' },
+          { time: '14:10:06', source: 'nginx_edge', ip: '45.154.255.89', ep: '/actuator/env', status: 404, target: '', anomaly: true, payload: 'Nuclei Scanner' },
+          { time: '14:10:09', source: 'nginx_edge', ip: '45.154.255.89', ep: '/swagger-ui.html', status: 200, target: '', anomaly: true, payload: 'unauthenticated_swagger_exposed' },
+          { time: '14:10:14', source: 'nginx_edge', ip: '45.154.255.89', ep: '/v2/api-docs', status: 200, target: '', anomaly: true, payload: 'schema_harvested (148KB)' },
+          { time: '14:10:18', source: 'nginx_edge', ip: '66.249.66.1', ep: '/sitemap.xml', status: 200, target: '', anomaly: false, payload: 'Googlebot' }
+        ],
+        findings: [
+          { control: 'OWASP API7:2023 (Security Misconfiguration)', title: 'Publicly Accessible Swagger Documentation in Production', impact: 'Interactive API docs provide malicious actors with exact schemas for injection and authorization bypass.', remediation: 'Restrict /swagger-ui.html and /v2/api-docs to authenticated staging environments.' }
+        ]
+      },
+
+      cloud_iam: {
+        id: 'cloud_iam',
+        risk_score: 95,
+        risk_status: 'CRITICAL',
+        noise_reduction: '99.1%',
+        incidents_count: 1,
+        soc_score: '44%',
+        soc_status: 'AT RISK',
+        title: 'CI/CD Worker Identity Compromise & Cloud Privilege Escalation',
+        mitre: 'T1098 Account Manipulation / Cloud Accounts',
+        confidence: '99%',
+        exec: 'A compromised CI/CD deployment credential attached AdministratorAccess to a secondary service user and minted persistent API keys. S3 backup bucket tampering was stopped by SCP.',
+        tech: 'Attacker gained temporary STS credentials from role github-actions-deployer and made API calls from untrusted IP 194.26.29.112 outside cloud IP ranges.',
+        blast: 'AWS Organization root policy scope; persistent programmatic credentials created for user backup-sync-worker.',
+        patch: `{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "DenyIAMModification",
+    "Effect": "Deny",
+    "Action": ["iam:AttachUserPolicy", "iam:CreateAccessKey"],
+    "Resource": "*"
+  }]
+}`,
+        logs: [
+          { time: '14:15:01', source: 'aws_cloudtrail', ip: '54.240.198.15', ep: 'sts.amazonaws.com', status: 200, target: 'github-actions-deployer', anomaly: false, payload: 'AssumeRole (github_run_991823)' },
+          { time: '14:15:08', source: 'aws_cloudtrail', ip: '194.26.29.112', ep: 'iam.amazonaws.com', status: 200, target: 'backup-sync-worker', anomaly: true, payload: 'AttachUserPolicy (AdministratorAccess)' },
+          { time: '14:15:15', source: 'aws_cloudtrail', ip: '194.26.29.112', ep: 'iam.amazonaws.com', status: 200, target: 'backup-sync-worker', anomaly: true, payload: 'CreateAccessKey (AKIA_PROD_ROGUE_7882)' },
+          { time: '14:15:22', source: 'aws_cloudtrail', ip: '194.26.29.112', ep: 's3.amazonaws.com', status: 403, target: 'acme-financial-db-backups', anomaly: true, payload: 'ModifyBucketPolicy (DENIED BY SCP)' }
+        ],
+        findings: [
+          { control: 'CIS-AWS-1.16 (IAM Policies Least Privilege)', title: 'Service Accounts Granted Full AdministratorAccess', impact: 'Single compromised CI token grants complete root takeover across all cloud resources.', remediation: 'Enforce IAM Permission Boundaries and short-lived 15-min OIDC token credentials.' }
+        ]
+      }
+    };
+
+    let currentScenarioId = 'credential_stuffing';
+    let filterAnomalies = false;
+
+    function renderScenario(sc) {
+      document.getElementById('metric-risk-score').innerText = sc.risk_score;
+      document.getElementById('metric-risk-score').style.color = sc.risk_score > 75 ? '#EF4444' : (sc.risk_score > 40 ? '#F59E0B' : '#10B981');
+      document.getElementById('metric-risk-bar').style.width = sc.risk_score + '%';
+      document.getElementById('metric-status-badge').innerText = sc.risk_status;
+      document.getElementById('metric-status-badge').className = 'badge ' + (sc.risk_score > 75 ? 'badge-critical' : 'badge-high');
+      
+      document.getElementById('metric-noise').innerText = sc.noise_reduction;
+      document.getElementById('metric-incidents').innerText = sc.incidents_count;
+      document.getElementById('metric-readiness').innerText = sc.soc_score;
+      document.getElementById('metric-soc-status').innerText = sc.soc_status;
+      document.getElementById('metric-soc-status').className = 'badge ' + (sc.soc_status === 'AT RISK' ? 'badge-critical' : 'badge-high');
+
+      document.getElementById('incident-title').innerText = sc.title;
+      document.getElementById('incident-sev-badge').innerText = sc.risk_status;
+      document.getElementById('incident-sev-badge').className = 'badge ' + (sc.risk_status === 'CRITICAL' ? 'badge-critical' : 'badge-high');
+      document.getElementById('incident-mitre').innerText = sc.mitre;
+      document.getElementById('incident-exec').innerText = sc.exec;
+      document.getElementById('incident-tech').innerText = sc.tech;
+      document.getElementById('incident-blast').innerText = sc.blast;
+      document.getElementById('incident-patch').innerText = sc.patch;
+
+      renderTerminal(sc.logs);
+      renderFindings(sc.findings);
+    }
+
+    function renderTerminal(logs) {
+      const container = document.getElementById('terminal-stream');
+      const displayed = filterAnomalies ? logs.filter(l => l.anomaly) : logs;
+      document.getElementById('terminal-event-count').innerText = `${displayed.length} events displayed`;
+
+      container.innerHTML = displayed.map(log => `
+        <div style="background: ${log.anomaly ? 'rgba(239, 68, 68, 0.12)' : 'rgba(255,255,255,0.02)'}; border: 1px solid ${log.anomaly ? 'rgba(239, 68, 68, 0.35)' : 'rgba(255,255,255,0.05)'}; border-radius: 10px; padding: 10px 14px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #94a3b8; font-size: 0.7rem;">
+            <span>[${log.time}] <strong style="color: #67e8f9;">[${log.source}]</strong></span>
+            ${log.anomaly ? '<span class="badge badge-critical" style="font-size: 0.62rem; padding: 2px 6px;">SUSPICIOUS ANOMALY</span>' : '<span style="color: #64748b;">BENIGN</span>'}
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline;">
+            <span style="color: #f1f5f9; font-weight: bold;">${log.ip}</span>
+            <span style="color: #38bdf8;">${log.ep}</span>
+            <span style="padding: 1px 6px; border-radius: 4px; font-weight: bold; background: ${log.status === 200 ? 'rgba(16, 185, 129, 0.2)' : (log.status >= 500 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)')}; color: ${log.status === 200 ? '#10B981' : (log.status >= 500 ? '#EF4444' : '#F59E0B')};">${log.status}</span>
+            ${log.target ? `<span style="color: #fcd34d;">user:${log.target}</span>` : ''}
+          </div>
+          <div style="margin-top: 4px; font-size: 0.7rem; color: #94a3b8; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px;">
+            $ payload: ${log.payload}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderFindings(findings) {
+      const container = document.getElementById('compliance-findings');
+      container.innerHTML = findings.map((f, i) => `
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span class="badge badge-critical font-mono">${f.control}</span>
+            <span style="font-size: 0.72rem; color: #94a3b8;" class="font-mono">Finding #${i+1}</span>
+          </div>
+          <h4 style="font-size: 0.96rem; font-weight: 700; color: #ffffff; margin-bottom: 4px;">${f.title}</h4>
+          <p style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.5; margin-bottom: 8px;">${f.impact}</p>
+          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px 12px; font-size: 0.76rem; color: #10B981;">
+            <strong>Remediation:</strong> ${f.remediation}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function switchScenario(id) {
+      currentScenarioId = id;
+      ['btn-cs', 'btn-wr', 'btn-iam'].forEach(btnId => {
+        document.getElementById(btnId).className = 'btn btn-secondary';
+      });
+      if (id === 'credential_stuffing') document.getElementById('btn-cs').className = 'btn btn-primary';
+      if (id === 'web_recon') document.getElementById('btn-wr').className = 'btn btn-primary';
+      if (id === 'cloud_iam') document.getElementById('btn-iam').className = 'btn btn-primary';
+      renderScenario(SCENARIOS[id]);
+    }
+
+    function toggleAnomaliesOnly() {
+      filterAnomalies = !filterAnomalies;
+      document.getElementById('btn-toggle-anomalies').innerText = filterAnomalies ? 'Show All Traffic' : 'Anomalies Only';
+      document.getElementById('btn-toggle-anomalies').style.background = filterAnomalies ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.06)';
+      renderTerminal(SCENARIOS[currentScenarioId].logs);
+    }
+
+    function copyTerminalLogs() {
+      const text = SCENARIOS[currentScenarioId].logs.map(l => `[${l.time}] [${l.source}] ${l.ip} ${l.ep} ${l.status} payload:${l.payload}`).join('\n');
+      navigator.clipboard.writeText(text);
+      const btn = document.getElementById('btn-copy-terminal');
+      btn.innerText = 'Copied!';
+      setTimeout(() => btn.innerText = 'Copy', 2000);
+    }
+
+    function copyPatchSnippet() {
+      navigator.clipboard.writeText(SCENARIOS[currentScenarioId].patch);
+      const btn = document.getElementById('btn-copy-patch');
+      btn.innerText = 'Copied!';
+      setTimeout(() => btn.innerText = 'Copy Snippet', 2000);
+    }
+
+    function openUploadModal() {
+      document.getElementById('upload-modal').classList.add('active');
+    }
+
+    function closeUploadModal() {
+      document.getElementById('upload-modal').classList.remove('active');
+    }
+
+    function insertSampleLogs() {
+      document.getElementById('custom-logs-input').value = 
+`185.220.101.5 - - [14/Sep/2026:12:00:01] "POST /api/v1/auth/login" 401 "invalid_password" TorNode
+185.220.101.5 - - [14/Sep/2026:12:00:03] "POST /api/v1/auth/login" 401 "invalid_password" TorNode
+185.220.101.5 - - [14/Sep/2026:12:00:06] "POST /api/v1/auth/login" 200 "admin@acme-saas.com" TorNode
+185.220.101.5 - - [14/Sep/2026:12:00:09] "GET /api/v1/admin/users/export" 200 "450_records"`;
+    }
+
+    function executeCustomLogTriage() {
+      const input = document.getElementById('custom-logs-input').value;
+      if (!input.trim()) return alert('Please enter logs to triage.');
+      closeUploadModal();
+      switchScenario('credential_stuffing');
+    }
+
+    function triggerRemediation(action) {
+      const modal = document.getElementById('remediation-modal');
+      const time = new Date().toUTCString();
+      const ruleId = 'rule_edge_' + Math.random().toString(36).substring(2, 8);
+
+      let headline = 'Edge IP Quarantine Active';
+      let message = 'IP 185.220.101.5 quarantined at Cloudflare & Nginx ingress.';
+      if (action === 'revoke_session') {
+        headline = 'Admin Token Revoked & Session Purged';
+        message = 'Active JWT blacklisted across all auth nodes. WebAuthn MFA enforced.';
+      } else if (action === 'apply_waf') {
+        headline = 'Edge WAF Rule Compiled & Deployed';
+        message = 'Custom protection rule deployed across 14 edge ingress nodes.';
+      }
+
+      document.getElementById('receipt-headline').innerText = headline;
+      document.getElementById('receipt-message').innerText = message;
+      document.getElementById('receipt-time').innerText = time;
+      document.getElementById('receipt-rule-id').innerText = ruleId;
+      modal.classList.add('active');
+    }
+
+    function closeRemediationModal() {
+      document.getElementById('remediation-modal').classList.remove('active');
+    }
+
+    function generateBoardMemoText() {
+      const sc = SCENARIOS[currentScenarioId];
+      return `# Sentinel Mini SOC — Executive Security & Compliance Memo
+Generated: ${new Date().toUTCString()}
+Overall Composite Risk Score: ${sc.risk_score}/100 (${sc.risk_status})
+SOC 2 Type II Readiness Score: ${sc.soc_score} (${sc.soc_status})
+
+### 1. Executive Summary
+${sc.exec}
+
+### 2. Active Threat Incident
+- Title: ${sc.title}
+- MITRE ATT&CK: ${sc.mitre}
+- Confidence: ${sc.confidence}
+- Blast Radius: ${sc.blast}
+
+### 3. Compliance Control Deficiencies
+${sc.findings.map((f, i) => `#### Finding ${i+1}: ${f.title} (${f.control})
+- Impact: ${f.impact}
+- Remediation: ${f.remediation}
+`).join('\n')}
+
+---
+Generated autonomously by Sentinel Mini SOC Engine.`;
+    }
+
+    function copyBoardMemo() {
+      navigator.clipboard.writeText(generateBoardMemoText());
+      const btn = document.getElementById('btn-copy-memo');
+      btn.innerText = '✓ Copied to Clipboard!';
+      setTimeout(() => btn.innerText = '📋 Copy Board Memo', 2000);
+    }
+
+    function downloadBoardMemo() {
+      const blob = new Blob([generateBoardMemoText()], { type: 'text/markdown' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `sentinel-soc-memo-${new Date().toISOString().slice(0,10)}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // Initialize on load
+    renderScenario(SCENARIOS.credential_stuffing);
+  </script>
+
+  <!-- AI Cyber Incident Analyst Floating Drawer -->
+  <div style="position: fixed; bottom: 24px; right: 24px; z-index: 100;">
+    <button onclick="toggleSocChat()" style="width: 58px; height: 58px; border-radius: 50%; background: #06B6D4; border: 2px solid #FFFFFF; color: #0F172A; font-size: 1.4rem; cursor: pointer; box-shadow: 0 8px 30px rgba(6, 182, 212, 0.5); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+      🛡️
+    </button>
+  </div>
+
+  <div id="soc-chat-widget" style="position: fixed; bottom: 92px; right: 24px; width: 380px; height: 520px; background: #0F172A; border: 1px solid #06B6D4; border-radius: 20px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; overflow: hidden; z-index: 100; opacity: 0; pointer-events: none; transform: translateY(20px); transition: all 0.25s ease;">
+    <div style="padding: 16px 20px; background: #1E293B; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h4 style="font-size: 1.05rem; font-weight: 800; color: #F8FAFC;">Sentinel AI Incident Analyst</h4>
+        <div id="soc-chat-status" style="font-size: 0.72rem; color: #06B6D4; display: flex; align-items: center; margin-top: 2px; font-family: 'JetBrains Mono', monospace;">
+          Connecting to Cloud Turbo AI...
+        </div>
+      </div>
+      <button onclick="toggleSocChat()" style="background: transparent; border: none; color: #94A3B8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+    </div>
+
+    <div id="soc-chat-messages" style="flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 12px; font-size: 0.84rem;">
+      <div style="background: #1E293B; border: 1px solid #334155; padding: 12px 16px; border-radius: 14px; max-width: 90%; align-self: flex-start; line-height: 1.5; color: #F8FAFC;">
+        Welcome to <strong>Sentinel Mini SOC</strong>! Built and conceptualized by solo developer <strong>Niten Varshan</strong>. Niten fully engineered the backend triage and incident quarantine pipelines from scratch, pairing with AI tools for the interface. Ask me to triage MITRE tactics, inspect malicious IPs, or generate edge WAF rules!
+      </div>
+    </div>
+
+    <div style="padding: 8px 14px; background: #0B1120; display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px solid #1E293B;">
+      <button onclick="askSocPreset('How do I mitigate T1110 Credential Stuffing?')" style="background: #1E293B; border: 1px solid #334155; color: #38BDF8; font-size: 0.72rem; padding: 5px 10px; border-radius: 6px; cursor: pointer;">Mitigate T1110?</button>
+      <button onclick="askSocPreset('Explain SOC 2 CC6.1 Access Control requirements')" style="background: #1E293B; border: 1px solid #334155; color: #38BDF8; font-size: 0.72rem; padding: 5px 10px; border-radius: 6px; cursor: pointer;">SOC 2 CC6.1?</button>
+    </div>
+
+    <div style="padding: 12px 16px; background: #111827; border-top: 1px solid #1E293B; display: flex; gap: 8px;">
+      <input type="text" id="soc-chat-input" placeholder="Ask cyber security analyst..." style="flex: 1; background: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 9px 14px; color: #FFFFFF; font-size: 0.82rem; outline: none;" onkeydown="if(event.key==='Enter') sendSocChat()">
+      <button onclick="sendSocChat()" style="background: #06B6D4; border: none; color: #0F172A; border-radius: 8px; padding: 0 16px; font-weight: 700; cursor: pointer;">Send</button>
+    </div>
+  </div>
+
+  <script>
+    function toggleSocChat() {
+      const w = document.getElementById('soc-chat-widget');
+      const isOpen = w.style.opacity === '1';
+      w.style.opacity = isOpen ? '0' : '1';
+      w.style.pointerEvents = isOpen ? 'none' : 'auto';
+      w.style.transform = isOpen ? 'translateY(20px)' : 'translateY(0)';
+    }
+
+    const socChat = createAgyChatEngine({
+      appId: 'soc',
+      containerId: 'soc-chat-messages',
+      inputId: 'soc-chat-input',
+      statusBadgeId: 'soc-chat-status',
+      systemPrompt: `You are Sentinel Mini SOC's Tier 3 Cyber Incident Commander & GRC Specialist.
+You specialize in:
+- MITRE ATT&CK Framework: T1110 (Brute Force / Credential Stuffing), T1059.006 (Python Exec), T1190 (Exploit Public-Facing Application), T1078 (Valid Accounts).
+- Threat Remediation: 1-click edge IP quarantine via Cloudflare & Nginx, WebAuthn MFA enforcement, JWT session invalidation, and rate-limiting.
+- SOC 2 Type II Controls: CC6.1 (Logical Access), CC6.6 (Boundary Defense), CC7.2 (Security Monitoring).
+- Severity Classification: P1 Critical (Active Data Exfiltration), P2 High (Privilege Escalation), P3 Medium.
+Provide concise, authoritative, incident response guidance with actionable technical steps.`,
+      fallbackHandler: (text) => {
+        const low = text.toLowerCase();
+        if (low.includes('t1110') || low.includes('stuffing') || low.includes('brute')) {
+          return "<strong>MITRE T1110 Mitigation:</strong> Enforce edge IP rate limiting (max 5 failed attempts per 60s), require WebAuthn FIDO2 MFA on all admin routes, and quarantine rotating Tor exit nodes at Cloudflare edge.";
+        } else if (low.includes('soc 2') || low.includes('cc6.1') || low.includes('compliance')) {
+          return "<strong>SOC 2 Type II CC6.1:</strong> Mandates logical access controls preventing unauthorized access. Requisite evidence includes automated MFA enforcement, least-privilege RBAC policies, and real-time failed login alert webhooks.";
+        } else if (low.includes('waf') || low.includes('remediation') || low.includes('quarantine')) {
+          return "<strong>1-Click Remediation Playbook:</strong> Use the remediation buttons on the active incident panel to deploy edge Nginx rules or revoke JWT sessions across all auth cluster nodes immediately.";
+        } else {
+          return "Sentinel Cyber Incident Commander ready. You can ask about MITRE ATT&CK techniques, log anomaly patterns, edge WAF quarantine rules, or SOC 2 compliance readiness.";
+        }
+      }
+    });
+
+    function askSocPreset(q) {
+      document.getElementById('soc-chat-input').value = q;
+      sendSocChat();
+    }
+
+    function sendSocChat() {
+      const input = document.getElementById('soc-chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+      socChat.sendMessage(text, '#06B6D4');
+    }
+  </script>
+</body>
+</html>
