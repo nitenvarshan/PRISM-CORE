@@ -986,9 +986,8 @@ Provide concise, authoritative, incident response guidance with actionable techn
           return "<strong>SOC 2 Type II CC6.1:</strong> Mandates logical access controls preventing unauthorized access. Requisite evidence includes automated MFA enforcement, least-privilege RBAC policies, and real-time failed login alert webhooks.";
         } else if (low.includes('waf') || low.includes('remediation') || low.includes('quarantine')) {
           return "<strong>1-Click Remediation Playbook:</strong> Use the remediation buttons on the active incident panel to deploy edge Nginx rules or revoke JWT sessions across all auth cluster nodes immediately.";
-        } else {
-          return "Sentinel Cyber Incident Commander ready. You can ask about MITRE ATT&CK techniques, log anomaly patterns, edge WAF quarantine rules, or SOC 2 compliance readiness.";
         }
+        return null;
       }
     });
 

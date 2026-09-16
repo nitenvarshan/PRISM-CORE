@@ -585,9 +585,8 @@ Keep responses concise, luxurious, helpful, and natural.`,
           return "Our <strong>Luxe Balayage ($260)</strong> includes custom hand-painted dimensional lightening, Olaplex bond repair infusion, and a French gloss toner for seamless sun-kissed blending.";
         } else if (low.includes('head spa') || low.includes('scalp')) {
           return "The <strong>Japanese Head Spa ($140)</strong> features a 200x microscopic trichology analysis, carbonated waterfall hydrotherapy, and acupressure Shiatsu massage to reset follicle health.";
-        } else {
-          return "Bonjour! I am your personal salon concierge. Our master stylists are available Tuesday through Thursday. Would you like a recommendation on balayage maintenance, scalp detox, or keratin restoration?";
         }
+        return null;
       }
     });
 

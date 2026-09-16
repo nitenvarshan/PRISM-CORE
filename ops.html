@@ -424,9 +424,8 @@ Speak with technical precision, SRE clarity, and platform authority.`,
           return "<strong>Failover Architecture:</strong> Autonomous health probes poll every 10s. Secondary standby clusters sync via continuous WAL replication, enabling seamless traffic migration in < 60 seconds.";
         } else if (low.includes('pgvector') || low.includes('embedding')) {
           return "<strong>pgvector Performance:</strong> We index 768-dimensional Gemini embeddings partitioned strictly by tenant boundary, maintaining sub-15ms vector cosine distance queries.";
-        } else {
-          return "CloudPulse Platform Architect online. You can ask about PostgreSQL kernel RLS, pgvector partitioning, our < 5m Sev 1 SLA, or execute the live isolation verification suite on the left.";
         }
+        return null;
       }
     });
 

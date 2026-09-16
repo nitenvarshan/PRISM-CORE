@@ -1525,9 +1525,8 @@ Speak concisely, authoritatively, with engineering rigor and helpfulness.`,
           return "The <strong>Apex Planar-X ($349)</strong> utilizes 106mm planar magnetic drivers with a microscopic 5Hz - 45,000Hz frequency response and detachable balanced 4.4mm Pentaconn cabling.";
         } else if (low.includes('promo') || low.includes('discount') || low.includes('coupon')) {
           return "You can use code <strong>APEX10</strong> in the shopping cart drawer for an instant 10% credit across your entire order!";
-        } else {
-          return "Welcome to Apex Gear Labs. Which hardware component can I provide technical acoustic measurements or pinouts for?";
         }
+        return null;
       }
     });
 
