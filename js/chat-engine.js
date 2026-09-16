@@ -171,6 +171,52 @@ class CloudTurboChatEngine {
       .agy-styled-table tr:nth-child(odd) {
         background: rgba(255, 255, 255, 0.05);
       }
+
+      /* Chat message bubbles: Guarantee flex flow & prevent squishing */
+      #soc-chat-messages,
+      #prism-chat-messages,
+      #chat-messages,
+      #ops-chat-messages,
+      #store-chat-messages {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 14px !important;
+        overflow-y: auto !important;
+        scroll-behavior: smooth !important;
+      }
+      #soc-chat-messages > div,
+      #prism-chat-messages > div,
+      #chat-messages > div,
+      #ops-chat-messages > div,
+      #store-chat-messages > div,
+      .agy-chat-bubble {
+        flex-shrink: 0 !important;
+        position: relative !important;
+        word-break: break-word !important;
+        box-sizing: border-box !important;
+      }
+      .agy-bot-bubble {
+        background: #141D2F !important;
+        border: 1px solid rgba(56, 189, 248, 0.28) !important;
+        border-radius: 16px 16px 16px 4px !important;
+        padding: 14px 18px !important;
+        max-width: 90% !important;
+        align-self: flex-start !important;
+        line-height: 1.6 !important;
+        color: #F1F5F9 !important;
+        font-size: 0.85rem !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+      }
+      .agy-user-bubble {
+        border-radius: 16px 16px 4px 16px !important;
+        padding: 12px 16px !important;
+        max-width: 85% !important;
+        align-self: flex-end !important;
+        line-height: 1.5 !important;
+        color: #FFFFFF !important;
+        font-size: 0.85rem !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25) !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -512,10 +558,12 @@ ${this.initialCustomPrompt}
 
     // 1. Render User Message bubble immediately
     const userDiv = document.createElement('div');
+    userDiv.className = 'agy-chat-bubble agy-user-bubble';
     userDiv.style.cssText = `
-      background: ${color}; color: #FFFFFF; padding: 10px 14px;
-      border-radius: 12px; max-width: 85%; align-self: flex-end; line-height: 1.5;
-      word-break: break-word; font-size: 0.85rem; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      background: ${color}; color: #FFFFFF; padding: 12px 16px;
+      border-radius: 16px 16px 4px 16px; max-width: 85%; align-self: flex-end; line-height: 1.5;
+      word-break: break-word; font-size: 0.85rem; box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+      flex-shrink: 0; position: relative; margin-bottom: 2px;
     `;
     userDiv.innerHTML = this.formatMarkdown(text);
     container.appendChild(userDiv);
@@ -547,12 +595,14 @@ ${this.initialCustomPrompt}
     // Append to message history
     this.messages.push({ role: 'user', content: text });
 
-    // Render Bot Placeholder with distinct active indicator so it can NEVER be blank
+    // Render Bot Placeholder with distinct active indicator inside a solid bubble so it can NEVER be blank or overlap
     const botDiv = document.createElement('div');
+    botDiv.className = 'agy-chat-bubble agy-bot-bubble';
     botDiv.style.cssText = `
-      background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 12px 16px; border-radius: 14px; max-width: 88%; align-self: flex-start;
-      line-height: 1.55; color: inherit; font-size: 0.85rem; word-break: break-word; min-height: 24px;
+      background: #141D2F; border: 1px solid rgba(56, 189, 248, 0.28);
+      padding: 14px 18px; border-radius: 16px 16px 16px 4px; max-width: 90%; align-self: flex-start;
+      line-height: 1.6; color: #F1F5F9; font-size: 0.85rem; word-break: break-word; flex-shrink: 0;
+      position: relative; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); margin-bottom: 2px;
     `;
     
     botDiv.innerHTML = `<span style="opacity:0.85; font-style:italic; display:inline-flex; align-items:center; gap:6px;">⚡ <span>Answering in milliseconds...</span></span>`;
@@ -1134,11 +1184,24 @@ ${this.initialCustomPrompt}
       return prefix + id;
     });
 
-    // 3. Escape HTML on the text content
+    // 3. Preserve safe HTML tags (e.g. <strong>, <b>, <em>, <i>, <code>, <br>, <span>, <a>, <div>)
+    const safeHtml = [];
+    processed = processed.replace(/<\/?(strong|b|em|i|code|br|span|a|div)[^>]*>/gi, (match) => {
+      const id = `@@SAFE_HTML_${safeHtml.length}@@`;
+      safeHtml.push(match);
+      return id;
+    });
+
+    // Escape any other raw HTML
     processed = processed
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+
+    // Restore safe HTML tags
+    safeHtml.forEach((tag, i) => {
+      processed = processed.replace(`@@SAFE_HTML_${i}@@`, tag);
+    });
 
     // 4. Parse Markdown Tables (Converts raw | pipes into beautiful styled tables)
     processed = this.parseMarkdownTables(processed);
