@@ -21,7 +21,7 @@ import RevenueSummary from '@/components/admin/RevenueSummary';
 import CustomerList from '@/components/admin/CustomerList';
 import SecurityAuditTab from '@/components/admin/SecurityAuditTab';
 
-export default function AdminDashboardPage() {
+function AdminDashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialTenantSlug = searchParams.get('tenant') || 'salon';
@@ -228,5 +228,13 @@ export default function AdminDashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <React.Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading Admin Portal...</div>}>
+      <AdminDashboardContent />
+    </React.Suspense>
   );
 }

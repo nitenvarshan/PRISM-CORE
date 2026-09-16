@@ -6,7 +6,7 @@ import { Lock, Mail, Key, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react
 import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { DEMO_TENANTS } from '@/lib/config/tenants';
 
-export default function AdminLoginPage() {
+function AdminLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTenant = searchParams.get('tenant') || 'salon';
@@ -212,5 +212,13 @@ export default function AdminLoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <React.Suspense fallback={<div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading Admin Portal...</div>}>
+      <AdminLoginContent />
+    </React.Suspense>
   );
 }
