@@ -127,7 +127,7 @@ PRISM Core incorporates a formal **34-Assertion Technical Audit** proving that a
 | **CloudPulse SaaS Ops** (`ops.html`) | **7 / 7** | **100% PASS** | 60fps 3D dotted wave, PostgreSQL RLS kernel isolation (Error 42501 proof), SRE runbooks, zero data leakage |
 | **Glamour Haven Salon** (`salon.html`) | **6 / 6** | **100% PASS** | Dynamic treatment selector, slot conflict calendar, booking confirmation modal (`BK-XXXXXX`), AI concierge |
 
-*For complete assertion logs, latency benchmarks, and architectural proofs, review [`PROJECT_EVIDENCE_REPORT.md`](file:///c:/Users/niten_2e/OneDrive/Desktop/Demos/PROJECT_EVIDENCE_REPORT.md).*
+*For complete assertion logs, latency benchmarks, and architectural proofs, review [`PROJECT_EVIDENCE_REPORT.md`](PROJECT_EVIDENCE_REPORT.md).*
 
 ---
 
@@ -136,8 +136,8 @@ PRISM Core incorporates a formal **34-Assertion Technical Audit** proving that a
 All applications operate **100% standalone with zero dependencies** directly in any modern web browser:
 
 1. **Offline Double-Click**:
-   - Double-click [`launch-demo.bat`](file:///c:/Users/niten_2e/OneDrive/Desktop/Demos/launch-demo.bat) (or open `index.html`) to launch the entire suite in Chrome, Edge, Safari, or Firefox.
-   - Double-click [`launch-minisoc.bat`](file:///c:/Users/niten_2e/OneDrive/Desktop/Demos/launch-minisoc.bat) to launch Sentinel Mini SOC directly.
+   - Double-click [`launch-demo.bat`](launch-demo.bat) (or open `index.html`) to launch the entire suite in Chrome, Edge, Safari, or Firefox.
+   - Double-click [`launch-minisoc.bat`](launch-minisoc.bat) to launch Sentinel Mini SOC directly.
 2. **Instant Web Hosting**:
    - Drop this repository folder into [Netlify Drop](https://app.netlify.com/drop) or [Vercel](https://vercel.com) for an instant HTTPS deployment in 15 seconds.
 
@@ -174,4 +174,5 @@ PRISM-Core/
 - **Author & Copyright Holder**: **Niten Varshan** (Copyright © 2026).
 - **Backend Architecture & Triage Kernel**: 100% conceived, architected, and built from scratch by **Niten Varshan**.
 - **Visual Design & Kinematics**: Directed by Niten Varshan, executed in pair-programming collaboration with state-of-the-art agentic AI tools.
-- **License Scope**: Licensed under the **[MIT License](file:///c:/Users/niten_2e/OneDrive/Desktop/Demos/LICENSE)**. Grants permission for free use, modification, and distribution, with the legal condition that the copyright notice and attribution to **Niten Varshan** remain intact across all copies, chat engines, and derivatives.
+- **License Scope**: Licensed under the **[MIT License](LICENSE)**. Grants permission for free use, modification, and distribution, with the legal condition that the copyright notice and attribution to **Niten Varshan** remain intact across all copies, chat engines, and derivatives.
+
