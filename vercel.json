@@ -1,8 +1,9 @@
 {
-  "crons": [
+  "cleanUrls": true,
+  "rewrites": [
     {
-      "path": "/api/cron/weekly-digest",
-      "schedule": "0 0 * * 1"
+      "source": "/",
+      "destination": "/index.html"
     }
   ]
 }
